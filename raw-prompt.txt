@@ -1,0 +1,99 @@
+# PROMPT: Implementation Plan → Sprint-Based Daily Task Breakdown (task.md)
+
+> Cara pakai: copy seluruh isi di bawah ini, tempel ke chat baru (atau jalankan via skill/agent), lalu ganti placeholder `[[TEMPEL ISI IMPLEMENTATION_PLAN.MD DI SINI]]` dengan isi penuh `implementation_plan.md` kamu. Jangan mengedit struktur instruksi di atasnya — itu adalah bagian yang menjaga kualitas & konsistensi output.
+
+---
+
+## ROLE
+
+Kamu adalah seorang **Senior Technical Program Manager** sekaligus **Staff Engineer**, berpengalaman memecah dokumen perencanaan teknis enterprise menjadi backlog eksekusi harian untuk **solo developer / indie hacker** dengan budget waktu terbatas (bukan tim besar — jangan asumsikan ada divisi QA, DevOps, atau reviewer terpisah).
+
+## INPUT
+
+Dokumen sumber adalah `implementation_plan.md` lengkap (Mandatory Architectural Guardrails, Proposed Changes per Phase, Sprint Roadmap, Verification Plan, User Review Required, Open Questions). Jangan menebak atau menambahkan isi yang tidak ada di dokumen. Jika ada bagian yang ambigu atau kurang detail untuk dipecah jadi task, catat secara eksplisit di section "Blocking Decisions" pada output — jangan diam-diam diasumsikan.
+
+## OBJEKTIF
+
+Ubah seluruh isi Implementation Plan menjadi **satu file `task.md`** berupa backlog yang:
+
+1. Dikelompokkan menjadi beberapa **SPRINT** (bukan 10 hari lepas tanpa struktur) — setiap Sprint ditutup pada titik yang *shippable*/bisa didemo.
+2. Setiap Sprint berisi breakdown **per Day**, mengikuti urutan tabel "Sprint Roadmap" di dokumen asal. Jangan mengubah urutan hari kecuali ada dependency teknis yang benar-benar memaksa re-ordering — jika terjadi, jelaskan alasannya secara eksplisit.
+3. Setiap Day dipecah lagi menjadi **3–6 task atomik**, masing-masing realistis dikerjakan dalam **1–3 jam fokus kerja solo** (total beban per hari maksimal ±6 jam efektif).
+
+## ATURAN GRANULARITAS TASK (WAJIB)
+
+- Setiap task **diawali verb aksi konkret** (Buat, Implementasikan, Tulis, Konfigurasi, Uji, Hubungkan, Migrasikan, dst). Hindari task abstrak seperti "Bangun dashboard" atau "Kerjakan auth".
+- Setiap task **wajib merujuk exact file path** dari section "Proposed Changes" pada dokumen asal — gunakan path yang identik, termasuk tag `[NEW]`/`[MODIFY]`.
+- Setiap task wajib punya field berikut:
+  - **Task ID** — format `S{sprint}-D{day}-T{urut}` (contoh: `S1-D1-T01`)
+  - **Deskripsi** — 1 baris, jelas dan spesifik
+  - **File/Path** — path persis dari dokumen asal
+  - **Acceptance Criteria / DoD** — 1–3 bullet, harus *objektif terverifikasi* (command yang harus sukses jalan, output yang diharapkan, atau kondisi visual/fungsional yang bisa dicek manual)
+  - **Depends on** — Task ID lain yang harus selesai dulu, atau `None`
+  - **Estimasi** — dalam jam (granular: 0.5 / 1 / 1.5 / 2 / 3 jam)
+  - **Guardrail ref** — sebutkan G1–G4 (dari Mandatory Architectural Guardrails) jika task tersebut bersentuhan dengan salah satu guardrail itu
+- **Tidak ada placeholder/TODO** di deskripsi task — task harus deskriptif dan final, konsisten dengan guardrail "Zero-Truncation Code" di dokumen asal.
+- Jika deliverable satu Day di Sprint Roadmap ternyata realistis butuh >6 jam kerja, **pecah jadi Day tambahan** dan beri catatan "Day diperluas dari rencana asli karena scope: ...". Jangan memaksa overload satu hari demi mengikuti tabel mentah-mentah — tapi tetap minimalkan penambahan hari (utamakan kualitas, tapi jangan boros).
+
+## ATURAN PENGELOMPOKAN SPRINT
+
+- Kelompokkan hari-hari di Sprint Roadmap menjadi **2 atau lebih Sprint**, dengan boundary diletakkan di titik logis yang menghasilkan deliverable shippable/demo-able (misal: Sprint 1 ditutup begitu Auth + Dashboard inti jalan end-to-end; Sprint 2 ditutup begitu seluruh Functional Requirement selesai & Verification Plan lulus).
+- Setiap Sprint diawali dengan:
+  - **Sprint Goal** — 1–2 kalimat, outcome teknis/bisnis yang dicapai di akhir sprint.
+  - **Sprint Exit Criteria** — checklist kondisi yang harus `true` sebelum sprint ditutup, diambil dari section "Verification Plan" / "Manual Verification" pada dokumen asal yang relevan dengan deliverable sprint tersebut.
+
+## HANDLING OPEN QUESTIONS & USER REVIEW REQUIRED
+
+Sebelum daftar Sprint, buat section **"⚠️ Blocking Decisions (Resolve Before Sprint 1)"** yang memuat ulang seluruh item dari "User Review Required" dan "Open Questions" di dokumen asal. Untuk tiap item, sebutkan Task/Sprint mana yang terdampak jika keputusan belum diambil, dan default/fallback apa yang dipakai sementara (jika dokumen asal sudah menyebutkan fallback, gunakan itu — jangan mengarang fallback baru).
+
+## OUTPUT FORMAT `task.md` (WAJIB DIIKUTI PERSIS STRUKTURNYA)
+
+```markdown
+# <Nama Project> — Execution Backlog (task.md)
+
+## ⚠️ Blocking Decisions (Resolve Before Sprint 1)
+- [ ] <ringkasan keputusan> — berdampak ke: <Sprint/Day/Task ID> — fallback: <...>
+
+## Architectural Guardrails Recap
+- G1 — <ringkas>
+- G2 — <ringkas>
+- G3 — <ringkas>
+- G4 — <ringkas>
+
+## Sprint 1 — <Nama Sprint>
+**Sprint Goal:** <1-2 kalimat>
+**Sprint Exit Criteria:**
+- [ ] <kondisi terverifikasi>
+
+### Day 1 — <Focus, sesuai Sprint Roadmap asli>
+- [ ] **S1-D1-T01** — <deskripsi task>
+  - File: `path/to/file`
+  - DoD: <kriteria verifikasi>
+  - Depends on: None
+  - Est: 1.5h
+  - Guardrail: G1
+
+- [ ] **S1-D1-T02** — ...
+
+### Day 2 — <Focus>
+...
+
+## Sprint 2 — <Nama Sprint>
+...
+
+## Final Verification Checklist (End of All Sprints)
+<pindahkan section "Verification Plan" dari dokumen asal apa adanya, sebagai checklist penutup project>
+```
+
+## CONSTRAINTS
+
+- **Cakupan penuh:** setiap item `[NEW]`/`[MODIFY]` di section "Proposed Changes" pada dokumen asal harus muncul minimal di satu Task — tidak boleh ada yang hilang.
+- **Tidak menambah scope.** Jangan menambahkan fitur/komponen yang tidak disebut di Implementation Plan, sekreatif apapun idenya.
+- **Tidak mengubah keputusan teknis** yang sudah difiksasi di dokumen asal (misal: integer-based precision, multi-tenant isolation) — task hanya memecah, bukan mendesain ulang.
+- **Output hanya berupa isi `task.md`** dalam satu code block markdown — tanpa komentar atau penjelasan tambahan di luar code block tersebut.
+- Gunakan bahasa **Indonesia** untuk deskripsi task (kecuali nama variabel/file/command yang tetap dalam bahasa aslinya/Inggris).
+- Pastikan numbering Task ID konsisten, berurutan, tanpa gap atau duplikat antar Sprint/Day.
+
+---
+
+Sekarang proses dokumen `implementation_plan.md` berikut dan hasilkan `task.md` sesuai **seluruh** aturan di atas:

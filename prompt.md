@@ -1,3 +1,5 @@
 npx repomix
 
-llmlingua --prompt "context-agent.txt" --rate 0.4 > prompt-siap-tempel.txt
+#isi prompt ke file raw-prompt.txt
+
+py .rtk-ai/compress.py
