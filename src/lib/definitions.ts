@@ -5,7 +5,7 @@ import type {
   DigestChannel,
   Locale,
   CookedTier,
-  Role,
+  UserRole,
 } from "@/generated/prisma";
 
 // ─── AUTH SCHEMAS ───────────────────────────────────────────────────────────
@@ -219,5 +219,5 @@ export type {
   DigestChannel,
   Locale,
   CookedTier,
-  Role,
+  UserRole,
 };

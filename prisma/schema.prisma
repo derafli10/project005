@@ -1,6 +1,4 @@
-// Project005 — Enterprise Task Management Pipeline & Academic DSS
-// Prisma Schema — PostgreSQL via Neon Serverless
-// All integer-based precision: weights stored as basis points (0–10000)
+// file: prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -9,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─── ENUMS ──────────────────────────────────────────────────────────────────
@@ -142,7 +139,6 @@ model ClassRoom {
 }
 
 model ClassRoomMember {
-  id          String   @id @default(cuid())
   classRoomId String
   userId      String
   joinedAt    DateTime @default(now())
@@ -150,7 +146,7 @@ model ClassRoomMember {
   classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, classRoomId])
+  @@id([classRoomId, userId])
   @@index([classRoomId])
   @@index([userId])
 }
@@ -185,7 +181,6 @@ model Task {
 }
 
 model UserTaskProgress {
-  id                 String     @id @default(cuid())
   userId             String
   taskId             String
   status             TaskStatus @default(PENDING)
@@ -196,7 +191,7 @@ model UserTaskProgress {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, taskId])
+  @@id([userId, taskId])
   @@index([userId])
   @@index([taskId])
 }

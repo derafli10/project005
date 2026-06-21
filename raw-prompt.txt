@@ -1,39 +1,21 @@
-Act as a Principal Software Engineer specializing in Next.js 16, React 19, TypeScript, and Prisma 7.8.0. We are building the foundational data layer and infrastructure for "Project005 Task Management DSS" (a Decision Support System for academic task management). 
+[COMMAND: AUTOMATED DIAGNOSTIC & PROBLEM SOLVING FOR src/lib/db.ts]
 
-Your objective is to fully implement Task 1.1, 1.2, and 1.4 in a single, high-fidelity response. Do not abbreviate code, do not use placeholder comments like "// ... rest of your code", and ensure strict TypeScript typing throughout.
+AGENT ROLE:
+Act as an Expert TypeScript & Prisma 7 Engineer with deep debugging capabilities. Your task is to diagnose, analyze, and completely solve all current compilation and type errors inside `src/lib/db.ts`.
 
-Here is the exact specification for each section:
+DIAGNOSTIC PROCESS:
+1. Read the current contents of `src/lib/db.ts` and inspect all active TypeScript / compilation errors.
+2. Verify that all required dependencies are present (such as `@prisma/adapter-neon`, `@neondatabase/serverless`, and `ws`).
 
-### 1. DATABASE LAYER & PRISMA SCHEMA (Task 1.1 & 1.2)
-Create a comprehensive `prisma/schema.prisma` configured for a PostgreSQL database (Neon Serverless). The schema must implement the following architectural constraints:
-- Multi-tenant Many-to-Many task architecture via a explicit bridge table named `UserTaskProgress` to prevent data duplication when tasks are shared across classrooms.
-- Supported Enums: 
-  * `TaskStatus` (e.g., PENDING, IN_PROGRESS, COMPLETED)
-  * `CookedTier` (MAIN_CHARACTER, LET_HIM_COOK, SLIGHTLY_COOKED, OVERCOOKED)
-  * `PostTag` (CurhatTugas, ButuhTemanTim, TanyaJawaban, DiskusiUmum)
-  * `DeliveryStatus` (SENT, FAILED)
-  * `UserRole` (USER, ADMIN)
-- Required Models & Relations:
-  1. `User`: id, email (unique), name, passwordHash, role, locale, digestEnabled, digestTime, deliveryChannel, whatsappNumber, telegramChatId, createdAt, updatedAt. Relations to Session, UserTaskProgress, ClassRoomMember, CookedScore, AnonymousPost (encrypted tracking), DailyDigestLog.
-  2. `Session`: Auth.js v5 standard fields.
-  3. `Task`: id, title, description, sksWeight, taskWeight, deadlineAt, isSubTask (boolean), parentTaskId (self-relation optional), classRoomId (optional ClassRoom relation), creatorId, createdAt, updatedAt. Relations to UserTaskProgress, TaskOverride, TaskEditLog.
-  4. `UserTaskProgress` (Bridge Table): userId, taskId, status, position (Int, optional for manual sorting override), completedAt, currentStressScore. Composite primary key: [userId, taskId].
-  5. `ClassRoom`: id, className, classCode (unique, 8 chars), sksWeight, creatorId, createdAt. Relations to ClassRoomMember, Task.
-  6. `ClassRoomMember`: classRoomId, userId, joinedAt. Composite primary key: [classRoomId, userId].
-  7. `CookedScore`: id, userId, cumulativeScore, tier (CookedTier), date (DateTime). Composite unique constraint: [userId, date].
-  8. `TaskOverride`: id, userId, taskId, reason, overriddenAt.
-  9. `TaskEditLog`: id, taskId, editorId, fieldName, oldValue, newValue, editedAt.
-  10. `AnonymousPost`: id, classRoomId, encryptedAuthorId (String/Text for RSA-OAEP), content (max 500 chars), tag (PostTag), createdAt.
-  11. `DailyDigestLog`: id, userId, digestDate (DateTime), deliveryStatus, errorMessage, sentAt. Composite unique constraint: [userId, digestDate].
-- DB Optimization: Add explicit indexes for `classRoomId`, `creatorId`, `deadlineAt`, and `parentTaskId`.
+COMMON ISSUES YOU MUST CHECK AND FIX:
+- Global Scope Typing: Ensure `globalThis.prisma` is properly declared via `declare global { var prisma: ... | undefined }` so TypeScript does not throw an implicit 'any' or missing property error.
+- WebSocket Integration: Ensure `neonConfig.webSocketConstructor = ws` is correctly evaluated only in server environments (e.g., `if (typeof window === "undefined")`) to prevent execution errors, and check if `ws` default vs named imports are causing type issues.
+- Prisma 7 Extension Inference: Prisma 7's `$extends` has very strict type requirements. Ensure the query interception hooks (`query: { task: { ... }, userTaskProgress: { ... }, cookedScore: { ... } }`) match the exact types exported by `@/generated/prisma`. Use explicit, accurate type signatures for the arguments if automatic inference breaks.
+- AsyncLocalStorage Type Context: Ensure that `AsyncLocalStorage` is correctly typed to hold either a string (`userId`) or an object, and that the fallback when the store is undefined is gracefully handled without causing runtime crashes or strict null checks errors.
 
-### 2. PROJECT STRUCTURE & TYPESCRIPT CONFIG (Task 1.4)
-Provide the standard Boilerplate Configuration files and output a clear directory tree showing where core logical layers reside.
-- Provide a clean `tsconfig.json` utilizing modern path aliases: `@/*` pointing to `./src/*`.
-- Provide a complete directory tree mapping for:
-  * `src/lib/services/` (priority-engine, auth, task, classroom, feed, cooked-meter, recovery-mode, daily-digest)
-  * `src/lib/validation/` (Zod schemas)
-  * `src/lib/errors/` (Domain-specific error handling)
-  * `src/app/` (Next.js App Router structural layout)
+STRICT EXECUTION RULES:
+1. DO NOT output partial code or placeholders like `// ... rest of code`.
+2. DO NOT just explain the solution in chat; you must directly update and rewrite `src/lib/db.ts` with the fully fixed, production-ready, type-safe code.
+3. Ensure the final code compiles flawlessly under strict TypeScript rules.
 
-Output the files directly in markdown blocks ready for implementation.
+EXECUTE NOW: Analyze the current errors in `src/lib/db.ts` and rewrite the file with the complete, error-free implementation.
