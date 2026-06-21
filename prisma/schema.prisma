@@ -3,17 +3,18 @@
 // All integer-based precision: weights stored as basis points (0–10000)
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─── ENUMS ──────────────────────────────────────────────────────────────────
 
-enum Role {
+enum UserRole {
   ADMIN
   MEMBER
 }
@@ -38,6 +39,11 @@ enum PostTag {
   DISKUSI_UMUM
 }
 
+enum DeliveryStatus {
+  SENT
+  FAILED
+}
+
 enum DigestChannel {
   WHATSAPP
   TELEGRAM
@@ -51,29 +57,36 @@ enum Locale {
 // ─── AUTH.JS REQUIRED MODELS ────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  locale        Locale    @default(EN)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  passwordHash    String?
+  role            UserRole @default(MEMBER)
+  locale          Locale   @default(EN)
+  
+  digestEnabled   Boolean  @default(false)
+  digestTime      String?  // HH:MM format
+  deliveryChannel DigestChannel @default(WHATSAPP)
+  whatsappNumber  String?
+  telegramChatId  String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Auth.js relations
-  accounts Account[]
-  sessions Session[]
+  accounts        Account[]
+  sessions        Session[]
 
   // Domain relations
-  ownedClassRooms  ClassRoom[]       @relation("ClassRoomOwner")
-  memberships      ClassMembership[]
-  createdTasks     Task[]            @relation("TaskCreator")
+  ownedClassRooms  ClassRoom[]        @relation("ClassRoomCreator")
+  classMemberships ClassRoomMember[]
+  createdTasks     Task[]             @relation("TaskCreator")
+  taskProgress     UserTaskProgress[]
   taskOverrides    TaskOverride[]
   taskEditLogs     TaskEditLog[]
   cookedScores     CookedScore[]
   anonymousPosts   AnonymousPost[]
-  digestPreference DigestPreference?
+  digestLogs       DailyDigestLog[]
 
   @@index([email])
 }
@@ -109,43 +122,33 @@ model Session {
   @@index([userId])
 }
 
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
 // ─── DOMAIN MODELS ──────────────────────────────────────────────────────────
 
 model ClassRoom {
   id        String   @id @default(cuid())
+  className String   @db.VarChar(120)
   classCode String   @unique @db.VarChar(8)
-  name      String   @db.VarChar(120)
-  ownerId   String
   sksWeight Int      @default(3) // Scale 1-5 integer (Bobot SKS Mata Kuliah)
+  creatorId String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  owner       User              @relation("ClassRoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  memberships ClassMembership[]
+  creator     User              @relation("ClassRoomCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  memberships ClassRoomMember[]
   tasks       Task[]
   posts       AnonymousPost[]
 
   @@index([classCode])
-  @@index([ownerId])
+  @@index([creatorId])
 }
 
-model ClassMembership {
+model ClassRoomMember {
   id          String   @id @default(cuid())
-  userId      String
   classRoomId String
-  role        Role     @default(MEMBER)
+  userId      String
   joinedAt    DateTime @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, classRoomId])
   @@index([classRoomId])
@@ -153,46 +156,63 @@ model ClassMembership {
 }
 
 model Task {
-  id            String     @id @default(cuid())
-  classRoomId   String
-  creatorId     String
-  title         String     @db.VarChar(255)
-  description   String?    @db.Text
-  taskWeight    Int        @default(5000) // Basis points 0-10000 (maps to 0%-100% Bobot Nilai Tugas)
+  id            String   @id @default(cuid())
+  title         String   @db.VarChar(255)
+  description   String?  @db.Text
+  sksWeight     Int      @default(3)
+  taskWeight    Int      @default(5000) // Basis points 0-10000
   deadlineAt    DateTime
-  status        TaskStatus @default(PENDING)
-  priorityScore Int        @default(0) // Computed: 0-10000 basis points
-  isRecoveryMode Boolean   @default(false)
-  position      Int        @default(0) // Manual ordering within user's pipeline
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  isSubTask     Boolean  @default(false)
+  parentTaskId  String?
+  classRoomId   String?
+  creatorId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  classRoom ClassRoom      @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
-  creator   User           @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  overrides TaskOverride[]
-  editLogs  TaskEditLog[]
+  parentTask    Task?    @relation("SubTasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subTasks      Task[]   @relation("SubTasks")
+  classRoom     ClassRoom? @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
+  creator       User     @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  userProgress  UserTaskProgress[]
+  overrides     TaskOverride[]
+  editLogs      TaskEditLog[]
 
-  @@index([classRoomId, status, priorityScore])
-  @@index([creatorId, status])
+  @@index([classRoomId])
+  @@index([creatorId])
   @@index([deadlineAt])
-  @@index([classRoomId, creatorId])
+  @@index([parentTaskId])
+}
+
+model UserTaskProgress {
+  id                 String     @id @default(cuid())
+  userId             String
+  taskId             String
+  status             TaskStatus @default(PENDING)
+  position           Int?
+  completedAt        DateTime?
+  currentStressScore Int        @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
 }
 
 model TaskOverride {
-  id          String   @id @default(cuid())
-  taskId      String
-  userId      String
-  oldPosition Int
-  newPosition Int
-  reason      String   @db.Text
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  taskId       String
+  reason       String   @db.Text
+  overriddenAt DateTime @default(now())
 
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  @@index([taskId])
   @@index([userId])
-  @@index([createdAt])
+  @@index([taskId])
 }
 
 model TaskEditLog {
@@ -202,12 +222,12 @@ model TaskEditLog {
   fieldName String   @db.VarChar(64)
   oldValue  String   @db.Text
   newValue  String   @db.Text
-  createdAt DateTime @default(now())
+  editedAt  DateTime @default(now())
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   editor User @relation(fields: [editorId], references: [id], onDelete: Cascade)
 
-  @@index([taskId, createdAt])
+  @@index([taskId])
   @@index([editorId])
 }
 
@@ -216,7 +236,6 @@ model CookedScore {
   userId          String
   date            DateTime   @db.Date
   cumulativeScore Int        @default(0) // 0-10000 basis points
-  tier            CookedTier @default(MAIN_CHARACTER)
   createdAt       DateTime   @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -226,35 +245,29 @@ model CookedScore {
 }
 
 model AnonymousPost {
-  id          String   @id @default(cuid())
-  classRoomId String
-  authorId    String? // Nullable for anonymity; stores hashed reference
-  content     String   @db.Text
-  tag         PostTag
-  isModerated Boolean  @default(false)
-  isHidden    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                String   @id @default(cuid())
+  classRoomId       String
+  encryptedAuthorId String?  @db.Text
+  content           String   @db.VarChar(500)
+  tag               PostTag
+  createdAt         DateTime @default(now())
 
   classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
-  author    User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author    User?     @relation(fields: [encryptedAuthorId], references: [id], onDelete: SetNull)
 
-  @@index([classRoomId, tag])
-  @@index([classRoomId, createdAt])
-  @@index([authorId])
+  @@index([classRoomId])
 }
 
-model DigestPreference {
-  id          String        @id @default(cuid())
-  userId      String        @unique
-  channel     DigestChannel @default(WHATSAPP)
-  contactId   String        @db.VarChar(64)
-  cronPattern String        @default("0 7 * * *") @db.VarChar(32)
-  timezone    String        @default("Asia/Jakarta") @db.VarChar(64)
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model DailyDigestLog {
+  id             String         @id @default(cuid())
+  userId         String
+  digestDate     DateTime       @db.Date
+  deliveryStatus DeliveryStatus
+  errorMessage   String?        @db.Text
+  sentAt         DateTime       @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([isActive])
+  @@unique([userId, digestDate])
+  @@index([userId])
 }
