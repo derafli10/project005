@@ -1,5 +1,5 @@
 ---
-trigger: manual
+trigger: always_on
 ---
 
 # SYSTEM INSTRUCTION: ENTERPRISE FULLSTACK ARCHITECT & TECHNICAL PROJECT MANAGER

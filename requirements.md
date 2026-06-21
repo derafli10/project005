@@ -19,7 +19,11 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 - **Override_Reason**: Data tekstual yang dicatat saat User melakukan Manual_Override
 - **Cooked_Meter**: Widget visual yang menampilkan akumulasi beban kerja mingguan User
 - **Cooked_Tier**: Kategori tingkat stress (Main Character, Let Him Cook, Slightly Cooked, Overcooked)
-- **Recovery_Mode**: Mode otomatis yang aktif ketika Cooked_Meter mencapai zona kritis (>80)
+- **Recovery_Mode**: Mode manual yang dapat diaktifkan User via UI ketika Cooked_Meter mencapai zona kritis (>80)
+- **SubTask**: Breakdown granular dari Parent Task yang dibuat saat Recovery_Mode diaktifkan
+- **UserTaskProgress**: Junction table yang mencatat status, position, dan metadata task per User
+- **JIT_Priority_Evaluation**: Just-In-Time lazy evaluation untuk Priority_Score yang dihitung on-the-fly tanpa background cron job
+- **DailyDigestLog**: Audit log untuk exactly-once delivery semantics Daily_Digest dengan composite unique index
 - **ClassRoom**: Ruang kelas virtual dengan kode unik untuk berbagi Task secara crowdsourced
 - **Class_Code**: Kode alfanumerik 8 karakter unik untuk join ClassRoom
 - **Task_Creator**: User yang pertama kali menginput Task ke dalam ClassRoom
@@ -77,7 +81,7 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 10. THE System SHALL menampilkan pesan error, notifikasi, dan label form dalam locale yang dipilih User
 
 
-### Requirement 3: Priority Score Engine dengan Formula Tiga Komponen
+### Requirement 3: Priority Score Engine dengan Just-In-Time Evaluation
 
 **User Story:** Sebagai mahasiswa, saya ingin sistem secara otomatis menghitung dan mengurutkan tugas berdasarkan bobot SKS mata kuliah, bobot nilai tugas, dan urgensi waktu, sehingga saya dapat fokus pada tugas paling kritis terlebih dahulu.
 
@@ -89,27 +93,27 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 4. WHEN waktu tersisa Task > 7 hari, THEN THE Priority_Engine SHALL menghitung timeUrgency dengan fungsi linear proporsional terhadap sisa hari
 5. WHEN waktu tersisa Task <= 7 hari dan > 24 jam, THEN THE Priority_Engine SHALL meningkatkan timeUrgency secara eksponensial menggunakan decay function
 6. WHEN waktu tersisa Task < 24 jam (SLA_Breach), THEN THE Priority_Engine SHALL menetapkan timeUrgency = 10000 basis points (maksimum)
-7. THE Priority_Engine SHALL menyimpan Priority_Score sebagai integer 0-10000 basis points di field priorityScore pada Task record
-8. WHEN Task baru dibuat atau Task existente di-update (deadline, sksWeight, taskWeight), THEN THE Priority_Engine SHALL recalculate Priority_Score secara otomatis
-9. THE Priority_Engine SHALL menjalankan recalculation batch setiap 1 jam untuk semua Task dengan status PENDING atau IN_PROGRESS
+7. THE Priority_Engine SHALL compute Priority_Score dynamically in-memory using Just-In-Time (JIT) lazy evaluation strategy whenever User requests Task Queue dashboard
+8. THE System SHALL NOT persist Priority_Score to database Task record
+9. THE System SHALL NOT execute hourly background cron jobs for Priority_Score recalculation
 10. THE Priority_Engine SHALL mempertahankan precision matematis dengan menggunakan integer arithmetic untuk semua perhitungan (menghindari floating point errors)
 
 
-### Requirement 4: Main Queue Dashboard dengan Auto-Sorting dan Micro-Prompts
+### Requirement 4: Main Queue Dashboard dengan Hybrid Sorting Strategy
 
 **User Story:** Sebagai mahasiswa, saya ingin melihat semua tugas saya dalam antrian vertikal yang otomatis diurutkan berdasarkan prioritas, dengan penjelasan transparan mengapa setiap tugas berada di posisi tersebut, sehingga saya memahami logika sistem.
 
 #### Acceptance Criteria
 
 1. THE System SHALL menampilkan Queue sebagai vertical card list di dashboard utama
-2. THE System SHALL mengurutkan Task cards dalam Queue dari Priority_Score tertinggi ke terendah (descending order)
-3. WHEN Priority_Score dua Task identik, THEN THE System SHALL mengurutkan berdasarkan deadline terdekat sebagai tiebreaker
+2. THE System SHALL mengurutkan Task cards dalam Queue menggunakan two-tier sorting precedence strategy: PRIMARY sort by UserTaskProgress.position ASC (manual overrides first), SECONDARY sort by dynamically computed Priority_Score DESC (JIT evaluation) when position is NULL
+3. WHEN Priority_Score dua Task identik dan position keduanya NULL, THEN THE System SHALL mengurutkan berdasarkan deadline terdekat sebagai tiebreaker
 4. THE System SHALL menampilkan Micro_Prompt sebagai teks kecil di bawah title setiap Task card
 5. THE Micro_Prompt SHALL berisi breakdown komponen Priority_Score dalam format: "SKS: {sksWeight} • Bobot: {taskWeight}% • Deadline: {daysRemaining} hari"
 6. WHEN waktu tersisa Task < 24 jam, THEN THE Micro_Prompt SHALL menampilkan label tambahan "🔥 SLA BREACH" dengan warna merah
-7. THE System SHALL memuat Queue dari database dengan query yang filter userId = current user AND status != COMPLETED
-8. THE System SHALL menampilkan status Task (PENDING, IN_PROGRESS, COMPLETED) dengan badge berwarna di Task card
-9. WHEN Task status berubah menjadi COMPLETED, THEN THE System SHALL menghapus Task dari Queue tanpa refresh halaman penuh (optimistic UI update)
+7. THE System SHALL query Task records via Many-to-Many relationship through UserTaskProgress bridge table dengan filter userId = current user AND UserTaskProgress.status != COMPLETED
+8. THE System SHALL menampilkan status Task (PENDING, IN_PROGRESS, COMPLETED) dari UserTaskProgress.status dengan badge berwarna di Task card
+9. WHEN Task status berubah menjadi COMPLETED, THEN THE System SHALL update UserTaskProgress.status dan menghapus Task dari Queue tanpa refresh halaman penuh (optimistic UI update)
 10. THE System SHALL menampilkan empty state dengan ilustrasi dan teks motivasi ketika Queue kosong
 
 
@@ -121,14 +125,14 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 
 1. THE System SHALL menyediakan drag handle UI element di setiap Task card dalam Queue
 2. WHEN User melakukan drag gesture pada Task card, THEN THE System SHALL menampilkan visual feedback (placeholder, elevated card shadow) menggunakan Framer_Motion
-3. WHEN User men-drop Task card di posisi baru dalam Queue, THEN THE System SHALL update field position di Task record dengan nilai relatif sesuai posisi baru
+3. WHEN User men-drop Task card di posisi baru dalam Queue, THEN THE System SHALL update UserTaskProgress.position field dengan integer relatif sesuai posisi baru
 4. WHEN User men-drop Task card di posisi baru, THEN THE System SHALL menampilkan bottom-sheet micro-prompt dengan pertanyaan "Kenapa kamu memindahkan tugas ini ke atas?"
 5. THE bottom-sheet SHALL menyediakan 4 pilihan quick feedback: "Lebih urgent dari prediksi sistem", "Butuh dikerjakan bareng teman", "Materi lebih sulit dari perkiraan", "Alasan pribadi"
 6. WHEN User memilih salah satu quick feedback option, THEN THE System SHALL menyimpan TaskOverride record dengan taskId, userId, oldPosition, newPosition, dan reason
 7. WHERE User memilih "Alasan pribadi", THE System SHALL menampilkan text input field untuk custom reason
 8. THE System SHALL menyimpan timestamp createdAt di setiap TaskOverride record untuk analisis temporal
-9. WHEN Manual_Override terjadi, THEN THE System SHALL NOT mengubah atau menghapus Priority_Score yang dihitung oleh Priority_Engine (temporal override only)
-10. THE System SHALL menampilkan indicator visual (contoh: icon override atau badge) di Task card yang pernah di-override oleh User
+9. WHEN Manual_Override terjadi, THEN THE System SHALL NOT mengubah atau menghapus JIT-computed Priority_Score calculation logic (position override hanya mempengaruhi sorting precedence)
+10. THE System SHALL menampilkan indicator visual (contoh: icon override atau badge) di Task card yang memiliki non-NULL UserTaskProgress.position value
 
 
 ### Requirement 6: "Am I Cooked?" Meter dengan Weekly Trends dan Tier Visualization
@@ -138,38 +142,38 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 #### Acceptance Criteria
 
 1. THE Cooked_Meter SHALL menampilkan widget visual di dashboard dengan progress bar atau radial chart
-2. THE System SHALL menghitung cumulativeScore harian dengan menjumlahkan Priority_Score semua Task yang deadline-nya dalam 7 hari ke depan
+2. THE System SHALL menghitung cumulativeScore harian dengan menjumlahkan JIT-computed Priority_Score dari semua Parent Task (excluding SubTask) yang deadline-nya dalam 7 hari ke depan via UserTaskProgress relationship
 3. WHEN cumulativeScore dalam range 0-2000 basis points (0-20% scale), THEN THE Cooked_Meter SHALL menampilkan tier "The Main Character" dengan warna pastel hijau
 4. WHEN cumulativeScore dalam range 2001-5000 basis points (21-50% scale), THEN THE Cooked_Meter SHALL menampilkan tier "Let Him Cook" dengan warna kuning
 5. WHEN cumulativeScore dalam range 5001-8000 basis points (51-80% scale), THEN THE Cooked_Meter SHALL menampilkan tier "Slightly Cooked" dengan warna orange
 6. WHEN cumulativeScore > 8000 basis points (>80% scale), THEN THE Cooked_Meter SHALL menampilkan tier "Overcooked / R.I.P Sleep" dengan warna merah dan glitch effect animation
 7. THE Cooked_Meter SHALL menampilkan Sparkline grafik mini yang menunjukkan tren cumulativeScore 7 hari terakhir
 8. THE System SHALL menyimpan CookedScore record harian untuk setiap User dengan date, cumulativeScore, dan tier
-9. WHEN cumulativeScore melewati threshold 8000, THEN THE System SHALL trigger notifikasi push ke User dengan pesan "Waktunya Recovery Mode!"
+9. WHEN cumulativeScore melewati threshold 8000, THEN THE System SHALL render modal UI offering Recovery Mode activation dengan explicit user consent requirement
 10. THE Cooked_Meter SHALL update secara real-time ketika Task baru ditambahkan, deadline berubah, atau Task diselesaikan (tanpa page refresh)
 
 
-### Requirement 7: Recovery Mode untuk Breakdown Tugas Kompleks
+### Requirement 7: Recovery Mode dengan User-Gated Activation
 
-**User Story:** Sebagai mahasiswa yang sedang overwhelmed, saya ingin sistem secara otomatis mengaktifkan Recovery Mode dan memecah tugas besar menjadi micro-tasks yang manageable ketika stress level saya mencapai zona kritis, sehingga saya tidak merasa paralyzed dan tetap bisa produktif.
+**User Story:** Sebagai mahasiswa yang sedang overwhelmed, saya ingin sistem menampilkan opsi Recovery Mode ketika stress level saya mencapai zona kritis, sehingga saya dapat memilih untuk memecah tugas besar menjadi sub-tasks yang manageable tanpa automated intrusion.
 
 #### Acceptance Criteria
 
-1. WHEN Cooked_Meter cumulativeScore melewati threshold 8000 basis points (>80% scale), THEN THE System SHALL mengaktifkan Recovery_Mode secara otomatis
-2. WHEN Recovery_Mode aktif, THEN THE System SHALL menampilkan visual indicator di dashboard dengan badge "Recovery Mode Aktif" dan ikon relaksasi
-3. THE System SHALL mengidentifikasi Task di top 3 Queue dengan taskWeight > 3000 basis points (>30% bobot nilai akhir) sebagai kandidat breakdown
-4. WHEN Task kandidat teridentifikasi, THEN THE System SHALL memecah Task menjadi 3-5 micro-tasks dengan deadline bertahap (spaced 1-2 hari antar micro-task)
-5. THE System SHALL menyimpan micro-tasks sebagai child Task records dengan field parentTaskId yang mereferensi Task induk
-6. THE System SHALL menghitung Priority_Score setiap micro-task berdasarkan deadline bertahap dan bobot proporsional dari Task induk
-7. WHEN Recovery_Mode aktif, THEN THE System SHALL menampilkan motivational text di dashboard dengan tone casual dan supportive, contoh: "Tarik napas dulu. Ini 3 langkah kecil buat keluar dari zona merah hari ini."
-8. THE System SHALL rotate motivational text dari database MotivationalTexts setiap kali Recovery_Mode aktif (minimal 10 variasi teks)
-9. WHEN User menyelesaikan semua micro-tasks dari satu Task induk, THEN THE System SHALL otomatis menandai Task induk sebagai COMPLETED
-10. WHEN cumulativeScore turun di bawah 8000 basis points, THEN THE System SHALL menonaktifkan Recovery_Mode dan menampilkan notifikasi "Selamat! Kamu keluar dari zona merah"
+1. WHEN Cooked_Meter cumulativeScore melewati threshold 8000 basis points (>80% scale), THEN THE System SHALL render modal UI with explicit Recovery Mode activation offer requiring User consent
+2. THE Recovery Mode modal SHALL display message: "Beban tugasmu tinggi. Aktifkan Recovery Mode untuk breakdown tugas kompleks?" dengan action buttons "Aktifkan" dan "Nanti Saja"
+3. WHEN User clicks "Aktifkan" button, THEN THE System SHALL activate Recovery_Mode and proceed with task breakdown workflow
+4. WHEN User clicks "Nanti Saja" button, THEN THE System SHALL dismiss modal and NOT activate Recovery_Mode until next Cooked_Meter threshold breach
+5. THE System SHALL mengidentifikasi top 3 Parent Task (excluding SubTask) dengan taskWeight > 3000 basis points (>30% bobot nilai akhir) sebagai kandidat breakdown
+6. WHEN Task kandidat teridentifikasi and User consents, THEN THE System SHALL memecah Task menjadi 3-5 SubTask records dengan deadline bertahap (spaced 1-2 hari antar SubTask)
+7. THE System SHALL menyimpan SubTask records dengan field parentTaskId referencing Parent Task id, dan isSubTask=true flag
+8. THE Priority_Engine SHALL calculate cumulativeScore based exclusively on Parent Task weights, ignoring individual SubTask contributions to prevent exponential stress inflation
+9. WHEN User menyelesaikan semua SubTask dari satu Parent Task, THEN THE System SHALL otomatis menandai Parent Task status sebagai COMPLETED via UserTaskProgress update
+10. WHEN cumulativeScore turun di bawah 8000 basis points, THEN THE System SHALL menampilkan notifikasi "Selamat! Kamu keluar dari zona merah" dan deactivate Recovery_Mode indicator
 
 
-### Requirement 8: Crowdsourced Task Input dengan Class Code Sharing
+### Requirement 8: Crowdsourced Task Input dengan Many-to-Many Architecture
 
-**User Story:** Sebagai mahasiswa dalam satu kelas mata kuliah, saya ingin Task_Creator dapat menginput detail tugas satu kali dan membagikannya via Class_Code sehingga semua teman sekelas otomatis menerima task tanpa perlu input data berulang-ulang.
+**User Story:** Sebagai mahasiswa dalam satu kelas mata kuliah, saya ingin Task_Creator dapat menginput detail tugas satu kali dan membagikannya via Class_Code sehingga semua teman sekelas otomatis dapat melihat task tanpa physical row duplication.
 
 #### Acceptance Criteria
 
@@ -178,11 +182,11 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 3. WHEN User membuat ClassRoom baru, THEN THE System SHALL menyimpan ClassRoom record dengan fields: id, classCode, className, createdBy (userId), dan createdAt
 4. THE System SHALL menyediakan UI "Join Class" di mana User dapat memasukkan Class_Code untuk bergabung dengan ClassRoom
 5. WHEN User memasukkan Class_Code valid dan submit, THEN THE System SHALL membuat ClassRoomMember record dengan classRoomId, userId, joinedAt, dan role=MEMBER
-6. WHEN Task_Creator menginput Task baru di dalam context ClassRoom, THEN THE System SHALL menyimpan Task record dengan field classRoomId yang mereferensi ClassRoom
-7. WHEN Task dengan classRoomId tersimpan, THEN THE System SHALL secara otomatis membuat Task records duplikat untuk setiap ClassRoomMember dengan userId berbeda
-8. THE System SHALL menyimpan field sourceTaskId di setiap duplikat Task untuk tracking relasi ke Task asli yang dibuat Task_Creator
-9. THE System SHALL menampilkan indicator "Shared from Class" atau icon grup di Task card yang berasal dari ClassRoom
-10. WHEN User leave ClassRoom, THEN THE System SHALL NOT menghapus Task yang sudah di-sync sebelumnya (Task tetap di Queue User)
+6. WHEN Task_Creator menginput Task baru di dalam context ClassRoom, THEN THE System SHALL menyimpan single Task record dengan field classRoomId yang mereferensi ClassRoom sebagai single source of truth
+7. THE System SHALL create UserTaskProgress bridge records automatically for all ClassRoomMember entries linking userId to taskId with initial status=PENDING, position=NULL, customNotes=NULL
+8. THE System SHALL enforce composite unique constraint [userId, taskId] on UserTaskProgress table to prevent duplicate progress tracking entries
+9. THE System SHALL menampilkan indicator "Shared from Class" atau icon grup di Task card yang memiliki non-NULL classRoomId
+10. WHEN User leaves ClassRoom, THEN THE System SHALL delete only UserTaskProgress records associated with Tasks belonging to that ClassRoom, preserving global Task integrity while removing user-specific progress data
 
 
 ### Requirement 9: Task Edit History Log dengan Audit Trail Transparency
@@ -192,18 +196,18 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 #### Acceptance Criteria
 
 1. THE System SHALL mencatat setiap perubahan data Task di Task_Edit_Log record dengan fields: taskId, editedBy (userId), fieldName, oldValue, newValue, dan editedAt
-2. WHEN Task_Creator mengubah field deadline dari Task dengan classRoomId, THEN THE System SHALL membuat Task_Edit_Log record dan propagate perubahan ke semua duplikat Task anggota kelas
-3. WHEN Task_Creator mengubah field taskWeight, sksWeight, atau title, THEN THE System SHALL propagate perubahan ke semua duplikat Task dan log perubahan di Task_Edit_Log
+2. WHEN Task_Creator mengubah field deadline dari Task dengan classRoomId, THEN THE System SHALL membuat Task_Edit_Log record referencing the single shared Task (no propagation needed due to M:N architecture)
+3. WHEN Task_Creator mengubah field taskWeight, sksWeight, atau title, THEN THE System SHALL update the single shared Task record and log perubahan di Task_Edit_Log
 4. THE System SHALL menampilkan timestamp editedAt dalam format relatable ("2 jam lalu", "kemarin", "3 hari lalu") di audit trail UI
-5. WHEN perubahan Task dipropagasi, THEN THE System SHALL mengirim push notification atau in-app notification ke semua ClassRoomMember dengan pesan "Task [title] diupdate oleh [Task_Creator name]"
+5. WHEN perubahan Task terjadi, THEN THE System SHALL mengirim push notification atau in-app notification ke semua ClassRoomMember via UserTaskProgress relationship dengan pesan "Task [title] diupdate oleh [Task_Creator name]"
 6. THE System SHALL menampilkan Task_Edit_Log sebagai collapsible timeline di detail Task view, dengan old vs new value comparison side-by-side
-7. WHEN User membuka Task yang memiliki Task_Edit_Log records, THEN THE System SHALL menampilkan badge "Ada Update" dengan jumlah unread changes
+7. WHEN User membuka Task yang memiliki Task_Edit_Log records, THEN THE System SHALL menampilkan badge "Ada Update" dengan jumlah unread changes tracked per user via junction table
 8. THE System SHALL menyimpan field isRead di junction table antara Task_Edit_Log dan User untuk tracking notifikasi yang sudah dibaca
 9. WHEN User membuka audit trail timeline, THEN THE System SHALL menandai semua Task_Edit_Log records terkait sebagai isRead=true untuk User tersebut
-10. THE System SHALL membatasi propagasi edit hanya untuk Task_Creator (User dengan userId = Task.createdBy) untuk mencegah edit collision
+10. THE System SHALL membatasi edit permissions exclusively to Task_Creator (User dengan userId = Task.createdBy) untuk mencegah edit collision
 
 
-### Requirement 10: Anonymous Structured ClassRoom Feed
+### Requirement 10: Anonymous Structured ClassRoom Feed dengan Encrypted Author Tracking
 
 **User Story:** Sebagai mahasiswa, saya ingin dapat berdiskusi, curhat, atau mencari teman tim secara anonim dalam ClassRoom dengan kategori terstruktur, sehingga saya bisa berinteraksi tanpa hambatan psikologis sosial dan menghindari toxicity.
 
@@ -213,11 +217,11 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 2. THE System SHALL menampilkan semua Post di Feed secara anonim tanpa menampilkan nama atau avatar User pembuat Post
 3. WHEN User membuat Post di Feed, THEN THE System SHALL wajibkan User memilih satu Post_Tag dari 4 kategori: #CurhatTugas, #ButuhTemanTim, #TanyaJawaban, #DiskusiUmum
 4. THE System SHALL menolak submit Post jika User tidak memilih Post_Tag dan menampilkan error message "Pilih kategori post dulu ya!"
-5. THE System SHALL menyimpan Post record dengan fields: id, classRoomId, content, postTag, createdBy (userId untuk internal tracking), createdAt, dan isAnonymous=true
-6. THE System SHALL menampilkan Post_Tag sebagai colored badge di setiap Post card dengan warna berbeda per kategori (#CurhatTugas=merah, #ButuhTemanTim=biru, #TanyaJawaban=hijau, #DiskusiUmum=abu-abu)
-7. THE System SHALL menyediakan filter UI di Feed untuk menampilkan Post berdasarkan Post_Tag yang dipilih User
-8. WHEN User memfilter Feed dengan Post_Tag tertentu, THEN THE System SHALL query Post records dengan WHERE classRoomId = X AND postTag = Y
-9. THE System SHALL menampilkan Posts dalam Feed dengan urutan reverse chronological (terbaru di atas)
+5. THE System SHALL menyimpan Post record dengan fields: id, classRoomId, content, postTag, authorId (MANDATORY, NOT NULLABLE), createdAt, dan isAnonymous=true
+6. THE System SHALL encrypt authorId field at rest using AES-256 asymmetric encryption, with decryption keys stored exclusively in an isolated offline cryptographic vault inaccessible to standard application runtime environments
+7. THE authorId decryption keys SHALL be excluded from environment variables and accessible only for legal compliance audits and anti-cyberbullying investigations via formal request procedures
+8. THE System SHALL menampilkan Post_Tag sebagai colored badge di setiap Post card dengan warna berbeda per kategori (#CurhatTugas=merah, #ButuhTemanTim=biru, #TanyaJawaban=hijau, #DiskusiUmum=abu-abu)
+9. THE System SHALL menyediakan filter UI di Feed untuk menampilkan Post berdasarkan Post_Tag yang dipilih User
 10. THE System SHALL membatasi panjang content Post maksimal 500 karakter untuk mencegah spam panjang dan menjaga readability
 
 
@@ -257,19 +261,45 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 10. WHEN User close Academic_Comeback modal, THEN THE System SHALL update Cooked_Meter secara animated dengan transition 1 detik untuk reflect stress drop
 
 
-### Requirement 13: Automated Daily Digest dengan Customizable Timing
+### Requirement 13: Automated Daily Digest dengan Idempotent Delivery Pipeline
 
-**User Story:** Sebagai mahasiswa dengan pola tidur fleksibel, saya ingin menerima ringkasan tugas kritis harian via WhatsApp/Telegram di waktu yang saya tentukan sendiri (bukan fixed 7:00 AM), sehingga saya bisa plan hari tanpa melewatkan deadline atau perubahan penting.
+**User Story:** Sebagai mahasiswa dengan pola tidur fleksibel, saya ingin menerima ringkasan tugas kritis harian via WhatsApp/Telegram di waktu yang saya tentukan sendiri (bukan fixed 7:00 AM), sehingga saya bisa plan hari tanpa melewatkan deadline atau perubahan penting, dengan jaminan exactly-once delivery.
 
 #### Acceptance Criteria
 
 1. THE System SHALL menyediakan settings UI di mana User dapat mengaktifkan/menonaktifkan Daily_Digest dan memilih delivery time (format HH:MM, contoh: 21:00 atau 06:30)
 2. THE System SHALL menyimpan preferensi Daily_Digest di User record dengan fields: digestEnabled (boolean), digestTime (time), dan digestChannel (WHATSAPP atau TELEGRAM)
 3. THE System SHALL menjalankan scheduled cron job setiap 30 menit untuk check User records dengan digestEnabled=true dan digestTime matching current time ± 15 menit
-4. WHEN cron job tereksekusi, THEN THE System SHALL query Task records untuk User dengan WHERE userId = X AND status != COMPLETED AND deadline <= NOW() + INTERVAL 3 DAYS
-5. THE Daily_Digest message SHALL berisi: jumlah Task pending, top 3 Task berdasarkan Priority_Score, dan "What changed since yesterday?" module
-6. THE "What changed since yesterday?" module SHALL menampilkan: Task baru yang ditambahkan (createdAt dalam 24 jam terakhir), Task dengan deadline shift (dilihat dari Task_Edit_Log), dan Priority escalations (Task yang naik >1000 basis points dalam 24 jam)
-7. THE System SHALL format Daily_Digest message dengan markdown atau plain text yang readable di WhatsApp/Telegram (contoh: bold untuk Task title, emoji untuk urgency indicator)
-8. WHEN digestChannel=WHATSAPP, THEN THE System SHALL mengirim message via WhatsApp Business API atau third-party service (contoh: Twilio, Fonnte)
-9. WHEN digestChannel=TELEGRAM, THEN THE System SHALL mengirim message via Telegram Bot API ke User's Telegram chat_id
-10. THE System SHALL menyimpan DailyDigest record dengan fields: userId, sentAt, taskCount, deliveryStatus (SENT, FAILED, SKIPPED), dan deliveryChannel untuk audit dan debugging
+4. THE System SHALL implement Idempotency Key mechanism using composite unique index [userId, digestDate] on DailyDigestLog table where digestDate format is strictly YYYY-MM-DD
+5. BEFORE calling external WhatsApp/Telegram APIs, THE System SHALL attempt to INSERT execution token into DailyDigestLog with (userId, CURRENT_DATE) composite key
+6. IF INSERT operation triggers database constraint violation due to existing [userId, digestDate] record, THEN THE System SHALL immediately fail-fast and exit without sending duplicate message, guaranteeing exactly-once delivery semantics
+7. IF INSERT operation succeeds, THEN THE System SHALL proceed with digest generation and external API call
+8. THE Daily_Digest message SHALL berisi: jumlah Parent Task (excluding SubTask) pending, top 3 Task berdasarkan JIT-computed Priority_Score, dan "What changed since yesterday?" module
+9. THE "What changed since yesterday?" module SHALL menampilkan: Task baru yang ditambahkan (createdAt dalam 24 jam terakhir), Task dengan deadline shift (dilihat dari Task_Edit_Log), dan Priority escalations (Task dengan timeUrgency change > 1000 basis points)
+10. WHEN external API call fails, THE System SHALL log deliveryStatus=FAILED in DailyDigestLog and trigger exponential backoff retry mechanism with maximum 3 attempts before permanent failure logging
+
+
+## Requirement 14: Frontend UI/UX Functional
+
+### 14.1 Dashboard Layout & Component Architecture
+1. THE Frontend SHALL render the Main Dashboard using a responsive **Bento Grid Layout** that adapts seamlessly from Desktop resolutions (min. 1280px) down to Mobile devices (min. 360px).
+2. The Bento Grid layout MUST segregate information into 4 primary widget containers:
+   - **Widget A (Task Queue):** Displays a vertical list of `UserTaskProgress` records.
+   - **Widget B (Cooked Meter Dashboard):** Visualizes the daily stress trend using a real-time sparkline chart.
+   - **Widget C (ClassRoom Anonymous Feed):** Displays the classroom social community thread feed.
+   - **Widget D (Academic Analytics & Wrapped):** Summarizes academic performance and study token metrics.
+
+### 14.2 Task Queue Interactivity & Drag-and-Drop Mechanism
+3. THE Frontend SHALL utilize an **Optimistic UI Updates** strategy when a user performs a task re-ordering (Drag-and-Drop) operation.
+4. WHEN a user changes a task card's position, THEN the frontend interface SHALL instantly update the visual layout on the client side before receiving a confirmation response from the background Server Actions.
+5. WHEN the Server Actions operation returns a `FAILED` status (e.g., due to network disruption), THEN the system SHALL automatically trigger a rollback routine (restoring the task card to its original position) and render a Toast Error Notification.
+6. THE Frontend SHALL enforce strict sub-task visibility: Granular micro-tasks resulting from **Recovery Mode** decomposition MUST be rendered nested inside their parent `Task` card, rather than as separate independent cards in the main queue.
+
+### 14.3 Recovery Mode UI Gatekeeping & Confirmation Modals
+7. WHEN the cumulative `Cooked_Meter` score exceeds the critical threshold (>8000 basis points), THE System SHALL NOT trigger automated task decomposition unilaterally.
+8. THE Frontend SHALL intercept the state and trigger a **Confirmation Modal Dialog** with a backdrop blur effect, offering the user the option to initialize the recovery sequence.
+9. WHEN the user explicitly clicks the "Approve Recovery Mode" button, THEN the system is authorized to dispatch the mutation payload to the backend to process the micro-task structural breakdown.
+
+### 14.4 Theme Accessibility & Animation Performance Standards
+10. THE Frontend SHALL adopt a **Premium Light Theme** specification, ensuring a minimum contrast ratio of 4.5:1 to fully comply with WCAG AA accessibility standards for high academic readability.
+11. Any layout shifting or re-ordering caused by automated algorithm calculations MUST be handled via smooth micro-animation transitions (max duration 300ms) to eliminate visual jarring for the user.
