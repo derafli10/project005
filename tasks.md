@@ -24,7 +24,7 @@ This implementation plan translates the design and requirements documents into a
     - Add indexes for query optimization: classRoomId, creatorId, deadlineAt, parentTaskId
     - _Requirements: 1.7, 3.1, 6.2, 8.1, 10.1, 13.5_
   
-  - [ ] 1.3 Configure Auth.js v5 with Prisma adapter
+  - [x] 1.3 Configure Auth.js v5 with Prisma adapter
     - Install `next-auth@beta` and `@auth/prisma-adapter`
     - Create `src/lib/auth.config.ts` with credentials provider
     - Configure session strategy, cookies (HTTP-only, Secure, SameSite=Strict)
