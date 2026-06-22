@@ -190,6 +190,19 @@ export function buildInMemoryClient() {
         s.tasks.set(args.where.id, updated);
         return { ...updated };
       },
+
+      async findMany(args: {
+        where?: { classRoomId?: string };
+        select?: Record<string, boolean>;
+      }) {
+        const s = getInMemoryStore();
+        const out: Record<string, unknown>[] = [];
+        for (const t of s.tasks.values()) {
+          if (args.where?.classRoomId && t.classRoomId !== args.where.classRoomId) continue;
+          out.push(selectProject({ ...t }, args.select));
+        }
+        return out;
+      },
     },
 
     userTaskProgress: {
@@ -297,6 +310,24 @@ export function buildInMemoryClient() {
         s.userTaskProgress.set(key, updated);
         return { ...updated };
       },
+
+      async deleteMany(args: {
+        where: {
+          userId: string;
+          taskId: { in: string[] };
+        };
+      }) {
+        const s = getInMemoryStore();
+        const taskIds = args.where.taskId.in;
+        let count = 0;
+        for (const taskId of taskIds) {
+          const key = `${args.where.userId}/${taskId}`;
+          if (s.userTaskProgress.delete(key)) {
+            count++;
+          }
+        }
+        return { count };
+      },
     },
 
     taskOverride: {
@@ -353,6 +384,22 @@ export function buildInMemoryClient() {
         if (!row) return null;
         return selectProject(row, args.select);
       },
+
+      async create(args: { data: Record<string, unknown> }) {
+        const s = getInMemoryStore();
+        const id = args.data.id ? String(args.data.id) : `class_${Math.random().toString(36).substring(2, 11)}`;
+        const classRoom = {
+          id,
+          className: String(args.data.className),
+          classCode: String(args.data.classCode),
+          sksWeight: (args.data.sksWeight as number) ?? 3,
+          creatorId: String(args.data.creatorId),
+          createdAt: new Date(),
+        };
+        s.classRooms.set(id, classRoom);
+        s.classRoomsByCode.set(classRoom.classCode, id);
+        return { ...classRoom };
+      },
     },
 
     classRoomMember: {
@@ -368,16 +415,21 @@ export function buildInMemoryClient() {
       async findMany(args: {
         where: {
           classRoomId?: string;
-          userId?: { not?: string };
+          userId?: string | { not?: string };
         };
+        include?: { classRoom?: boolean };
         select?: Record<string, boolean>;
       }) {
         const s = getInMemoryStore();
         const out: Record<string, unknown>[] = [];
         for (const m of s.classRoomMembers.values()) {
           if (args.where.classRoomId && m.classRoomId !== args.where.classRoomId) continue;
-          if (args.where.userId && typeof args.where.userId === "object" && "not" in args.where.userId) {
-            if (m.userId === args.where.userId.not) continue;
+          if (args.where.userId) {
+            if (typeof args.where.userId === "string") {
+              if (m.userId !== args.where.userId) continue;
+            } else if (typeof args.where.userId === "object" && "not" in args.where.userId) {
+              if (m.userId === args.where.userId.not) continue;
+            }
           }
           const row: Record<string, unknown> = {};
           if (!args.select) {
@@ -387,9 +439,45 @@ export function buildInMemoryClient() {
               if (v && k in m) row[k] = (m as unknown as Record<string, unknown>)[k];
             }
           }
+          if (args.include?.classRoom) {
+            row.classRoom = s.classRooms.get(m.classRoomId) ?? null;
+          }
           out.push(row);
         }
         return out;
+      },
+
+      async create(args: { data: Record<string, unknown> }) {
+        const s = getInMemoryStore();
+        const classRoomId = String(args.data.classRoomId);
+        const userId = String(args.data.userId);
+        const key = `${classRoomId}/${userId}`;
+        if (s.classRoomMembers.has(key)) {
+          throw Object.assign(new Error("Unique constraint failed"), {
+            code: "P2002",
+          });
+        }
+        const member = {
+          classRoomId,
+          userId,
+          joinedAt: new Date(),
+        };
+        s.classRoomMembers.set(key, member);
+        return { ...member };
+      },
+
+      async delete(args: {
+        where: {
+          classRoomId_userId: { classRoomId: string; userId: string };
+        };
+      }) {
+        const s = getInMemoryStore();
+        const { classRoomId, userId } = args.where.classRoomId_userId;
+        const key = `${classRoomId}/${userId}`;
+        const existing = s.classRoomMembers.get(key);
+        if (!existing) throw new Error("ClassRoomMember not found");
+        s.classRoomMembers.delete(key);
+        return { ...existing };
       },
     },
 
