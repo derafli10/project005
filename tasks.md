@@ -45,15 +45,15 @@ This implementation plan translates the design and requirements documents into a
     - _Requirements: 1.7, Design: Row-Level Security via Prisma Client Extensions_
 
 
-- [ ] 2. Implement core business logic services
-  - [ ] 2.1 Create domain error classes and validation schemas
+- [x] 2. Implement core business logic services
+  - [x] 2.1 Create domain error classes and validation schemas
     - Implement `src/lib/errors/domain-errors.ts` with DomainError base class
     - Create error types: AuthenticationError, ValidationError, NotFoundError, ConflictError, ExternalServiceError
     - Implement `src/lib/validation/schemas.ts` with Zod schemas for all inputs
     - Define schemas: registerSchema, loginSchema, createTaskSchema, classCodeSchema, anonymousPostSchema
     - _Requirements: 1.1, 1.2, 8.1, 10.3_
   
-  - [ ] 2.2 Implement Priority Score Engine service with JIT evaluation
+  - [x] 2.2 Implement Priority Score Engine service with JIT evaluation
     - Create `src/lib/services/priority-engine.service.ts`
     - Implement `calculateTimeUrgency` with three-tier logic: <24h = 10000, 1-7d = exponential decay, >7d = linear
     - Implement `calculatePriorityScore` with formula: (sksWeight × 2000 × 0.4) + (taskWeight × 0.4) + (timeUrgency × 0.2)
@@ -61,7 +61,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `generateMicroPrompt` to create human-readable priority explanations
     - _Requirements: 3.1, 3.4, 3.5, 3.6, 3.7_
   
-  - [ ]* 2.3 Write property tests for Priority Engine
+  - [x] 2.3 Write property tests for Priority Engine
     - **Property 7: Priority Score Calculation Formula Correctness**
     - **Property 8: Time Urgency Calculation by Deadline Range**
     - Use fast-check to generate random sksWeight (1-5), taskWeight (0-10000), deadlines
@@ -69,7 +69,7 @@ This implementation plan translates the design and requirements documents into a
     - Tag: `Feature: project005-task-management-dss, Property 7, Property 8`
     - _Requirements: 3.1, 3.4, 3.5, 3.6_
   
-  - [ ] 2.4 Implement Authentication Service
+  - [x] 2.4 Implement Authentication Service
     - Create `src/lib/services/auth.service.ts`
     - Implement `register` with bcrypt password hashing (10 rounds)
     - Implement `login` with credential validation and session creation
@@ -77,7 +77,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `logout` to destroy session
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.8_
   
-  - [ ]* 2.5 Write property tests for Authentication Service
+  - [x] 2.5 Write property tests for Authentication Service
     - **Property 1: Registration with Valid Credentials Creates Account**
     - **Property 2: Duplicate Email Registration is Rejected**
     - **Property 3: Valid Login Creates Session Token**
@@ -86,7 +86,7 @@ This implementation plan translates the design and requirements documents into a
     - Assert account creation, duplicate rejection, session token creation
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
   
-  - [ ] 2.6 Implement Task Service with JIT priority sorting
+  - [x] 2.6 Implement Task Service with JIT priority sorting
     - Create `src/lib/services/task.service.ts`
     - Implement `createTask` with UserTaskProgress bridge record creation
     - Implement `getUserTasks` with JIT priority calculation and hybrid sorting (position ASC nulls last, priorityScore DESC, deadline ASC)
@@ -95,7 +95,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `recordOverride` to save TaskOverride records
     - _Requirements: 4.1, 4.2, 4.3, 4.7, 4.9, 5.1, 5.6_
 
-  - [ ]* 2.7 Write property tests for Task Service
+  - [x] 2.7 Write property tests for Task Service
     - **Property 9: Task Queue Sorting by Priority Score**
     - **Property 10: Task Queue Tiebreaker by Deadline**
     - **Property 11: Manual Position Override Updates Task Record**
