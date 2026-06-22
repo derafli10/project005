@@ -2,22 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import fc from "fast-check";
 import bcrypt from "bcryptjs";
 
-import { AuthService } from "@/lib/services/auth.service";
-import { ConflictError, AuthenticationError } from "@/lib/errors/domain-errors";
-import { buildInMemoryClient, resetInMemoryDb } from "./helpers/in-memory-db";
-
-/**
- * Mock the DB module so that both `db` and `baseDb` resolve to the
- * in-memory client. `withUserContext` is a pass-through since the auth service
- * does not rely on AsyncLocalStorage scoping (it passes userId explicitly).
- */
-const mockClient = buildInMemoryClient();
-
-vi.mock("@/lib/db", () => ({
-  db: mockClient,
-  baseDb: mockClient,
-  withUserContext: async (_userId: string, fn: () => unknown) => fn(),
-}));
+import { resetInMemoryDb, getInMemoryStore } from "./helpers/store";
+import { buildInMemoryClient } from "./helpers/in-memory-db";
 
 /**
  * Property-based tests for the Authentication Service.
@@ -27,67 +13,76 @@ vi.mock("@/lib/db", () => ({
  * Reference: design.md > Correctness Properties 1–4, Requirements 1.1–1.8.
  */
 
+// ─── Mock: vi.hoisted ensures the stubs exist before the hoisted vi.mock ────
+
+const { mockDb } = vi.hoisted(() => ({
+  mockDb: {
+    user: { findUnique: vi.fn(), create: vi.fn() },
+    session: { findUnique: vi.fn(), create: vi.fn(), delete: vi.fn() },
+  },
+}));
+
+let client: ReturnType<typeof buildInMemoryClient>;
+
+function hydrateMock() {
+  client = buildInMemoryClient();
+  mockDb.user.findUnique.mockImplementation(client.user.findUnique.bind(client.user));
+  mockDb.user.create.mockImplementation(client.user.create.bind(client.user));
+  mockDb.session.findUnique.mockImplementation(client.session.findUnique.bind(client.session));
+  mockDb.session.create.mockImplementation(client.session.create.bind(client.session));
+  mockDb.session.delete.mockImplementation(client.session.delete.bind(client.session));
+}
+
+vi.mock("@/lib/db", () => ({
+  db: mockDb,
+  baseDb: mockDb,
+  withUserContext: async (_userId: string, fn: () => unknown) => fn(),
+}));
+
+// Service imports MUST come after vi.mock declarations.
+import { AuthService } from "@/lib/services/auth.service";
+import { ConflictError, AuthenticationError } from "@/lib/errors/domain-errors";
+
 beforeEach(() => {
   resetInMemoryDb();
+  hydrateMock();
+  vi.clearAllMocks();
 });
 
 // ─── Arbitraries ────────────────────────────────────────────────────────────
 
-/** A valid email (RFC-friendly subset). */
-const validEmailArb = fc
-  .stringOf(
-    fc.array(
-      fc.constantFrom(
-        // Alphanumeric + dots, dashes, pluses (simplified)
-        ..."abcdefghijklmnopqrstuvwxyz0123456789"
-      ),
-      { minLength: 1, maxLength: 12 }
-    ).chain((local) =>
-      fc.tuple(
-        fc.constant(local.join("")),
-        fc.constantFrom(
-          "example.com",
-          "test.org",
-          "mail.net",
-          "university.edu"
-        )
-      )
-    ),
-    { maxLength: 1 }
-  )
-  .map(([parts]) => {
-    const [local, domain] = parts as [string[], string];
-    return `${local.join("")}@${domain}`;
-  });
+/** A valid email using UUID local-part to guarantee uniqueness across iterations. */
+const validEmailArb = fc.uuid().map((uuid) => `${uuid}@test.example`);
 
 /** A valid password ≥ 8 chars with at least one letter, one number, one special. */
 const validPasswordArb = fc
-  .stringOf(
-    fc.constantFrom(
-      ..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
-    ),
-    { minLength: 8, maxLength: 64 }
-  )
-  .filter((p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p));
+  .string({
+    minLength: 8,
+    maxLength: 64,
+    charset: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%",
+  })
+  .filter(
+    (p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p)
+  );
 
 /** A valid name ≥ 2 chars. */
-const validNameArb = fc.stringOf(
-  fc.constantFrom(
-    ..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "
-  ),
-  { minLength: 2, maxLength: 64 }
-).filter((n) => n.trim().length >= 2);
+const validNameArb = fc
+  .string({
+    minLength: 2,
+    maxLength: 64,
+    charset: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ",
+  })
+  .filter((n) => n.trim().length >= 2);
 
 // ─── Property 1: Registration with Valid Credentials Creates Account ───────
 
 describe("Property 1: Registration with Valid Credentials Creates Account", () => {
-  it("returns a user (without passwordHash) for any valid email + password + name", () => {
-    fc.assert(
-      fc.property(validEmailArb, validPasswordArb, validNameArb,
+  it("returns a user (without passwordHash) for any valid email + password + name", async () => {
+    await fc.assert(
+      fc.asyncProperty(validEmailArb, validPasswordArb, validNameArb,
         async (email, password, name) => {
           const user = await AuthService.register(email, password, name);
 
-          // Must return a user object.
           expect(user).toBeDefined();
           expect(user.email).toBe(email.toLowerCase());
           expect(user.name).toBe(name.trim());
@@ -95,8 +90,6 @@ describe("Property 1: Registration with Valid Credentials Creates Account", () =
           expect(user.id).toBeDefined();
 
           // The password must have been hashed (not stored in plaintext).
-          // We verify by looking it up from the store.
-          const { getInMemoryStore } = await import("./helpers/store");
           const store = getInMemoryStore();
           const stored = store.users.get(user.id);
           expect(stored).toBeDefined();
@@ -116,14 +109,12 @@ describe("Property 1: Registration with Valid Credentials Creates Account", () =
 // ─── Property 2: Duplicate Email Registration is Rejected ──────────────────
 
 describe("Property 2: Duplicate Email Registration is Rejected", () => {
-  it("throws ConflictError when the email already exists", () => {
-    fc.assert(
-      fc.property(validEmailArb, validPasswordArb, validNameArb,
+  it("throws ConflictError when the email already exists", async () => {
+    await fc.assert(
+      fc.asyncProperty(validEmailArb, validPasswordArb, validNameArb,
         async (email, password, name) => {
-          // First registration should succeed.
           await AuthService.register(email, password, name);
 
-          // Second registration with the same email must throw.
           await expect(
             AuthService.register(email, "DifferentP@ssw0rd!", name)
           ).rejects.toThrow(ConflictError);
@@ -137,28 +128,22 @@ describe("Property 2: Duplicate Email Registration is Rejected", () => {
 // ─── Property 3: Valid Login Creates Session Token ─────────────────────────
 
 describe("Property 3: Valid Login Creates Session Token", () => {
-  it("returns a sessionToken after registering and logging in", () => {
-    fc.assert(
-      fc.property(validEmailArb, validPasswordArb, validNameArb,
+  it("returns a sessionToken after registering and logging in", async () => {
+    await fc.assert(
+      fc.asyncProperty(validEmailArb, validPasswordArb, validNameArb,
         async (email, password, name) => {
-          // Register.
           const user = await AuthService.register(email, password, name);
-
-          // Login with the same credentials.
           const result = await AuthService.login(email, password);
 
           expect(result.sessionToken).toBeTruthy();
           expect(typeof result.sessionToken).toBe("string");
           expect(result.user.id).toBe(user.id);
 
-          // The session should exist in the store.
-          const { getInMemoryStore } = await import("./helpers/store");
           const store = getInMemoryStore();
           const session = store.sessions.get(result.sessionToken);
           expect(session).toBeDefined();
           if (session) {
             expect(session.userId).toBe(user.id);
-            // Expires should be ~30 days in the future.
             const ttlDays =
               (session.expires.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
             expect(ttlDays).toBeGreaterThan(29);
@@ -174,11 +159,10 @@ describe("Property 3: Valid Login Creates Session Token", () => {
 // ─── Property 4: Invalid Login is Rejected ─────────────────────────────────
 
 describe("Property 4: Invalid Login is Rejected", () => {
-  it("throws AuthenticationError for wrong password", () => {
-    fc.assert(
-      fc.property(validEmailArb, validPasswordArb, validNameArb, validPasswordArb,
+  it("throws AuthenticationError for wrong password", async () => {
+    await fc.assert(
+      fc.asyncProperty(validEmailArb, validPasswordArb, validNameArb, validPasswordArb,
         async (email, correctPassword, name, wrongPassword) => {
-          // Skip when the passwords happen to be the same.
           fc.pre(correctPassword !== wrongPassword);
 
           await AuthService.register(email, correctPassword, name);
@@ -192,15 +176,13 @@ describe("Property 4: Invalid Login is Rejected", () => {
     );
   });
 
-  it("throws AuthenticationError for a non-existent email", () => {
-    fc.assert(
-      fc.property(validEmailArb, validPasswordArb,
+  it("throws AuthenticationError for a non-existent email", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        validEmailArb,
+        validPasswordArb,
         async (email, password) => {
-          // Register a *different* user so the store is non-empty (tests a
-          // realistic scenario where the DB is live but the email doesn't
-          // match).
-          await AuthService.register("other@example.com", "ValidP@ss1!", "Other");
-
+          // No user is registered with this email — login must fail.
           await expect(
             AuthService.login(email, password)
           ).rejects.toThrow(AuthenticationError);
@@ -235,20 +217,16 @@ describe("AuthService.validateSession", () => {
     const email = "expire@test.org";
     const password = "Str0ng!Pass";
     await AuthService.register(email, password, "Expire Test");
-    const { sessionToken, user } = await AuthService.login(email, password);
+    const { sessionToken } = await AuthService.login(email, password);
 
-    // Force-expire the session in the store.
-    const { getInMemoryStore } = await import("./helpers/store");
     const store = getInMemoryStore();
     const session = store.sessions.get(sessionToken);
     if (session) {
-      session.expires = new Date(Date.now() - 1000); // 1 second ago
+      session.expires = new Date(Date.now() - 1000);
     }
 
     const result = await AuthService.validateSession(sessionToken);
     expect(result).toBeNull();
-
-    // Session should have been deleted.
     expect(store.sessions.has(sessionToken)).toBe(false);
   });
 });
