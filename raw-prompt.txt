@@ -1,39 +1,20 @@
-[CRITICAL SEPARATION OF CONCERNS COMMAND - TASK 1.3 AUTH.JS V5 IMPLEMENTATION]
+[EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
-AGENT INSTRUCTION:
-You must strictly execute a multi-file write workflow based on workspace analysis. Do not hallucinate fields, do not use code placeholders (e.g., "// rest of code"), and DO NOT output code blocks for the user to copy-paste. Write directly to the workspace filesystem.
+TASK TO EXECUTE:
+Task Number: [2.1 ; 2.2 ; 2.3 ; 2.4 ; 2.5 ; 2.6 ; 2.7]
+Context/Notes: []
 
-STEP 1: WORKSPACE REQUIREMENT AUDIT (READ BEFORE CODING)
-1. Read `tasks.md` and extract the strict specifications for "Task 1.3: Configure Auth.js v5 with Prisma adapter". Note requirements for session strategy, cookies (HTTP-only, Secure, SameSite=Strict), and route protection middleware.
-2. Read `prisma/schema.prisma` to verify Auth.js model configurations (User, Account, Session). Specifically notice that the User model uses `passwordHash` (String?) instead of a generic `password` field.
-3. Read `src/lib/db.ts` to see how the Prisma Client instance is exported so you can bind the PrismaAdapter correctly.
+CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
+1. READ THE BLUEPRINT: Before writing a single line of code, you must open, read, and parse `tasks.md` specifically for the Task Number indicated above. Look at its sub-bullets, dependencies, and requirements mapping.
+2. CROSS-REFERENCE SPECS: Locate and analyze `requirements.md` and `design.md` inside the workspace to understand the full domain logic, architectural constraints, and exact technical specifications required for this task. Do not make any assumptions about the implementation.
+3. INSPECT EXISTING CODES & SCHEMA: Check the current database state in `prisma/schema.prisma` and any existing service files related to this task. Ensure everything you write aligns perfectly with the current project structure and types.
+4. STRICT TYPE SAFETY: You must ensure absolute TypeScript type safety. If you are handling custom fields or third-party libraries (like Auth.js v5), perform proper module augmentation or type extensions as implicitly required by strict compiler configurations. Double-check your imports.
+5. WORKSPACE EXECUTION: Do not just write markdown code blocks for the user to copy-paste. You are an autonomous IDE agent; execute the file creations, modifications, and updates directly into the workspace files.
 
-STEP 2: DIRECT ENVIRONMENT COMPATIBLE IMPLEMENTATION (WRITE TO DISK)
-Auth.js v5 in Next.js App Router requires a split configuration to support Edge Runtime in middleware. Create or overwrite the following 3 files directly with production-ready, fully typed TypeScript code:
+EXECUTION PIPELINE:
+- Step 1: Read and analyze `tasks.md`, `requirements.md`, and `design.md`.
+- Step 2: Formulate the exact implementation plan based purely on those documents.
+- Step 3: Directly modify or create the necessary files in the repository.
+- Step 4: Verify that there are no TypeScript compilation errors or diagnostics issues remaining.
 
---- FILE 1: `src/lib/auth.config.ts` ---
-- Target Path: `src/lib/auth.config.ts`
-- Contents: Define the core auth options that are Edge-compatible.
-  - Import `NextAuthConfig` from `next-auth`.
-  - Implement a `Credentials` provider.
-  - Inside `authorize`: Parse and validate the credentials using a Zod schema matching `email` and `password`. Use `bcryptjs` (compare method) to verify the password against the user's `passwordHash` from the database.
-  - Configure `session: { strategy: "jwt" }` (mandated for Credentials provider in Auth.js v5).
-  - Explicitly define custom cookie configurations ensuring `httpOnly: true`, `secure: process.env.NODE_ENV === "production"`, and `sameSite: "strict"`.
-  - Implement the `callbacks` object (`jwt` and `session`) to safely propagate the user's database `id`, `role`, and `locale` from the token into the active session object.
-
---- FILE 2: `src/auth.ts` ---
-- Target Path: `src/auth.ts`
-- Contents: Initialize the main Auth.js handlers with the database adapter.
-  - Import `NextAuth` from `next-auth`.
-  - Import `PrismaAdapter` from `@auth/prisma-adapter`.
-  - Import the clean/base PrismaClient instance from `src/lib/db.ts`.
-  - Destructure and export: `handlers: { GET, POST }, auth, signIn, signOut`. Pass the combined `PrismaAdapter(prisma)` and the configuration from `@/lib/auth.config` into the `NextAuth` constructor.
-
---- FILE 3: `src/middleware.ts` ---
-- Target Path: `src/middleware.ts`
-- Contents: Global Route Protection Layer.
-  - Import `NextAuth` from `next-auth`.
-  - Import the core configuration from `@/lib/auth.config`.
-  - Initialize NextAuth middleware wrapper using `NextAuth(authConfig).auth`.
-  - Implement route filtering inside the auth callback: If a user attempts to access `/dashboard` or `/classrooms` without an active token/session, automatically redirect them to `/login`. If an authenticated user attempts to open `/login` or `/register`, redirect them straight to `/dashboard`.
-  - Export a standard `config` object with a `matcher` array protecting all
+Proceed with Step 1 immediately. No fluff, just execute the task accurately according to the specs.

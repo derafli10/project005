@@ -38,6 +38,10 @@ const adapter = new PrismaNeon(pool);
 function createPrismaClient() {
   const baseClient = new PrismaClient({ adapter });
 
+  // The extended client enforces row-level security via AsyncLocalStorage.
+  // The un-scoped base client is exported separately as `baseDb` for privileged
+  // cross-tenant operations (e.g. classroom task propagation writes
+  // UserTaskProgress rows for many users at once — Requirement 8.7).
   return baseClient.$extends({
     query: {
       task: {
@@ -109,10 +113,24 @@ export type ExtendedPrismaClient = ReturnType<typeof createPrismaClient>;
 declare global {
   // eslint-disable-next-line no-var
   var prisma: ExtendedPrismaClient | undefined;
+  // eslint-disable-next-line no-var
+  var prismaBase: PrismaClient | undefined;
 }
 
+/**
+ * Multi-tenant-scoped client. Use this in all request-bound code paths; it
+ * transparently injects the active userId via AsyncLocalStorage.
+ */
 export const db = globalThis.prisma ?? createPrismaClient();
+
+/**
+ * Un-scoped base client. Use ONLY for privileged operations that must cross
+ * tenant boundaries (classroom task propagation, cron jobs, etc.). Never use
+ * this to serve direct user requests without an explicit userId filter.
+ */
+export const baseDb = globalThis.prismaBase ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.prisma = db;
+  globalThis.prismaBase = baseDb;
 }
