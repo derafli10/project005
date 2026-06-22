@@ -5,4 +5,6 @@
  * vitest (a non-Next.js runtime). The package is a Next.js guard rail that
  * throws at import time; in tests it should be a no-op.
  */
+import { vi } from "vitest";
+
 vi.mock("server-only", () => ({}));

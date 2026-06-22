@@ -384,7 +384,7 @@ export function buildInMemoryClient() {
             Object.assign(row, m);
           } else {
             for (const [k, v] of Object.entries(args.select)) {
-              if (v && k in m) row[k] = (m as Record<string, unknown>)[k];
+              if (v && k in m) row[k] = (m as unknown as Record<string, unknown>)[k];
             }
           }
           out.push(row);

@@ -54,25 +54,43 @@ beforeEach(() => {
 /** A valid email using UUID local-part to guarantee uniqueness across iterations. */
 const validEmailArb = fc.uuid().map((uuid) => `${uuid}@test.example`);
 
-/** A valid password ≥ 8 chars with at least one letter, one number, one special. */
-const validPasswordArb = fc
-  .string({
-    minLength: 8,
-    maxLength: 64,
-    charset: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%",
-  })
-  .filter(
-    (p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p)
-  );
+/**
+ * Build an arbitrary that produces a string of length `len` using only the
+ * characters in `alphabet`. fast-check v3.22+ removed `charset` from
+ * `StringConstraints`, so we compose the string from `mapToConstant`.
+ */
+function stringFromAlphabet(
+  alphabet: string,
+  minLength: number,
+  maxLength: number
+): fc.Arbitrary<string> {
+  const charEntries = alphabet.split("").map((c) => ({
+    num: 1,
+    build: () => c,
+  }));
+  return fc
+    .array(fc.mapToConstant(...charEntries), { minLength, maxLength })
+    .map((chars) => chars.join(""));
+}
 
-/** A valid name ≥ 2 chars. */
-const validNameArb = fc
-  .string({
-    minLength: 2,
-    maxLength: 64,
-    charset: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ",
-  })
-  .filter((n) => n.trim().length >= 2);
+/**
+ * A valid password ≥ 8 chars with at least one letter, one number, one special.
+ * Alphanumeric + `!@#$%`.
+ */
+const validPasswordArb = stringFromAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%",
+  8,
+  64
+).filter(
+  (p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p)
+);
+
+/** A valid name ≥ 2 chars (letters + spaces). */
+const validNameArb = stringFromAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ",
+  2,
+  64
+).filter((n) => n.trim().length >= 2);
 
 // ─── Property 1: Registration with Valid Credentials Creates Account ───────
 
