@@ -82,7 +82,6 @@ model User {
   taskOverrides    TaskOverride[]
   taskEditLogs     TaskEditLog[]
   cookedScores     CookedScore[]
-  anonymousPosts   AnonymousPost[]
   digestLogs       DailyDigestLog[]
 
   @@index([email])
@@ -230,7 +229,8 @@ model CookedScore {
   id              String     @id @default(cuid())
   userId          String
   date            DateTime   @db.Date
-  cumulativeScore Int        @default(0) // 0-10000 basis points
+  cumulativeScore Int        @default(0) // 0-10000+ basis points
+  tier            CookedTier @default(MAIN_CHARACTER)
   createdAt       DateTime   @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -242,13 +242,12 @@ model CookedScore {
 model AnonymousPost {
   id                String   @id @default(cuid())
   classRoomId       String
-  encryptedAuthorId String?  @db.Text
+  encryptedAuthorId String   @db.Text
   content           String   @db.VarChar(500)
   tag               PostTag
   createdAt         DateTime @default(now())
 
   classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
-  author    User?     @relation(fields: [encryptedAuthorId], references: [id], onDelete: SetNull)
 
   @@index([classRoomId])
 }

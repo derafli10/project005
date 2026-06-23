@@ -17,6 +17,8 @@ import {
   nextTaskId,
   nextOverrideId,
   nextEditLogId,
+  nextAnonymousPostId,
+  nextCookedScoreId,
   type InMemoryStore,
 } from "./store";
 
@@ -478,6 +480,126 @@ export function buildInMemoryClient() {
         if (!existing) throw new Error("ClassRoomMember not found");
         s.classRoomMembers.delete(key);
         return { ...existing };
+      },
+    },
+
+    anonymousPost: {
+      async findMany(args: {
+        where?: { classRoomId?: string; tag?: string };
+        orderBy?: { createdAt?: "asc" | "desc" };
+      }) {
+        const s = getInMemoryStore();
+        const out: Record<string, unknown>[] = [];
+        for (const p of s.anonymousPosts.values()) {
+          if (args.where?.classRoomId && p.classRoomId !== args.where.classRoomId) continue;
+          if (args.where?.tag && p.tag !== args.where.tag) continue;
+          out.push({ ...p });
+        }
+        if (args.orderBy?.createdAt) {
+          const dir = args.orderBy.createdAt === "asc" ? 1 : -1;
+          out.sort((a, b) => {
+            const da = (a.createdAt as Date).getTime();
+            const db = (b.createdAt as Date).getTime();
+            return (da - db) * dir;
+          });
+        }
+        return out;
+      },
+
+      async create(args: { data: Record<string, unknown> }) {
+        const s = getInMemoryStore();
+        const id = args.data.id ? String(args.data.id) : nextAnonymousPostId(s);
+        const post = {
+          id,
+          classRoomId: String(args.data.classRoomId),
+          encryptedAuthorId: args.data.encryptedAuthorId ? String(args.data.encryptedAuthorId) : null,
+          content: String(args.data.content),
+          tag: args.data.tag as "CURHAT_TUGAS" | "BUTUH_TEMAN_TIM" | "TANYA_JAWABAN" | "DISKUSI_UMUM",
+          createdAt: (args.data.createdAt as Date) ?? new Date(),
+        };
+        s.anonymousPosts.set(id, post);
+        return { ...post };
+      },
+
+      async delete(args: { where: { id: string } }) {
+        const s = getInMemoryStore();
+        const post = s.anonymousPosts.get(args.where.id);
+        if (!post) throw new Error("AnonymousPost not found");
+        s.anonymousPosts.delete(args.where.id);
+        return { ...post };
+      },
+    },
+
+    cookedScore: {
+      async findMany(args: {
+        where?: {
+          userId?: string;
+          date?: {
+            gte?: Date;
+            lte?: Date;
+          };
+        };
+        select?: Record<string, boolean>;
+        orderBy?: { date?: "asc" | "desc" };
+      }) {
+        const s = getInMemoryStore();
+        const out: Record<string, unknown>[] = [];
+        for (const cs of s.cookedScores.values()) {
+          if (args.where?.userId && cs.userId !== args.where.userId) continue;
+          if (args.where?.date) {
+            const time = cs.date.getTime();
+            if (args.where.date.gte && time < args.where.date.gte.getTime()) continue;
+            if (args.where.date.lte && time > args.where.date.lte.getTime()) continue;
+          }
+          out.push(selectProject({ ...cs }, args.select));
+        }
+        if (args.orderBy?.date) {
+          const dir = args.orderBy.date === "asc" ? 1 : -1;
+          out.sort((a, b) => {
+            const da = (a.date as Date).getTime();
+            const db = (b.date as Date).getTime();
+            return (da - db) * dir;
+          });
+        }
+        return out as any;
+      },
+
+      async upsert(args: {
+        where: {
+          userId_date: { userId: string; date: Date };
+        };
+        create: {
+          userId: string;
+          date: Date;
+          cumulativeScore: number;
+          tier: string;
+        };
+        update: {
+          cumulativeScore: number;
+          tier: string;
+        };
+      }) {
+        const s = getInMemoryStore();
+        const { userId, date } = args.where.userId_date;
+        const key = `${userId}/${date.toISOString()}`;
+        const existing = s.cookedScores.get(key);
+        if (existing) {
+          existing.cumulativeScore = args.update.cumulativeScore;
+          existing.tier = args.update.tier as any;
+          return { ...existing } as any;
+        } else {
+          const id = nextCookedScoreId(s);
+          const cs = {
+            id,
+            userId,
+            date,
+            cumulativeScore: args.create.cumulativeScore,
+            tier: args.create.tier as any,
+            createdAt: new Date(),
+          };
+          s.cookedScores.set(key, cs);
+          return { ...cs } as any;
+        }
       },
     },
 

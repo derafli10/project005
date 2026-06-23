@@ -79,6 +79,24 @@ export interface InMemoryClassRoomMember {
   joinedAt: Date;
 }
 
+export interface InMemoryAnonymousPost {
+  id: string;
+  classRoomId: string;
+  encryptedAuthorId: string | null;
+  content: string;
+  tag: "CURHAT_TUGAS" | "BUTUH_TEMAN_TIM" | "TANYA_JAWABAN" | "DISKUSI_UMUM";
+  createdAt: Date;
+}
+
+export interface InMemoryCookedScore {
+  id: string;
+  userId: string;
+  date: Date;
+  cumulativeScore: number;
+  tier: "MAIN_CHARACTER" | "LET_HIM_COOK" | "SLIGHTLY_COOKED" | "OVERCOOKED";
+  createdAt: Date;
+}
+
 export interface InMemoryStore {
   users: Map<string, InMemoryUser>;
   usersByEmail: Map<string, string>; // email(lower) → userId
@@ -91,7 +109,9 @@ export interface InMemoryStore {
   classRooms: Map<string, InMemoryClassRoom>;
   classRoomsByCode: Map<string, string>; // classCode → id
   classRoomMembers: Map<string, InMemoryClassRoomMember>; // `${classRoomId}/${userId}`
-  counters: { user: number; session: number; task: number; override: number; editLog: number };
+  anonymousPosts: Map<string, InMemoryAnonymousPost>;
+  cookedScores: Map<string, InMemoryCookedScore>; // `${userId}/${dateISO}` → score
+  counters: { user: number; session: number; task: number; override: number; editLog: number; anonymousPost: number; cookedScore: number };
 }
 
 export function createInMemoryStore(): InMemoryStore {
@@ -107,7 +127,9 @@ export function createInMemoryStore(): InMemoryStore {
     classRooms: new Map(),
     classRoomsByCode: new Map(),
     classRoomMembers: new Map(),
-    counters: { user: 0, session: 0, task: 0, override: 0, editLog: 0 },
+    anonymousPosts: new Map(),
+    cookedScores: new Map(),
+    counters: { user: 0, session: 0, task: 0, override: 0, editLog: 0, anonymousPost: 0, cookedScore: 0 },
   };
 }
 
@@ -137,4 +159,10 @@ export function nextOverrideId(s: InMemoryStore): string {
 }
 export function nextEditLogId(s: InMemoryStore): string {
   return `log_${++s.counters.editLog}`;
+}
+export function nextAnonymousPostId(s: InMemoryStore): string {
+  return `post_${++s.counters.anonymousPost}`;
+}
+export function nextCookedScoreId(s: InMemoryStore): string {
+  return `cs_${++s.counters.cookedScore}`;
 }

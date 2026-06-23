@@ -516,6 +516,13 @@ export class TaskService {
       data: { status: "COMPLETED", completedAt: now },
     });
 
+    const task = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
+
+    if (task.isSubTask && task.parentTaskId) {
+      const { RecoveryModeService } = await import("./recovery-mode.service");
+      await RecoveryModeService.checkParentCompletion(task.parentTaskId, userId);
+    }
+
     // Snapshot the cumulative stress score AFTER completion.
     const afterQueue = await this.getUserTasks(
       userId,
@@ -528,8 +535,6 @@ export class TaskService {
 
     // Celebration fires only when the user was OVERCOOKED before completion.
     const triggerCelebration = oldTier === "OVERCOOKED";
-
-    const task = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
 
     return { task, triggerCelebration, stressDrop, oldTier, newTier };
   }

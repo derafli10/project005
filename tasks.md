@@ -104,7 +104,7 @@ This implementation plan translates the design and requirements documents into a
     - _Requirements: 4.2, 4.3, 5.1_
 
 
-- [ ] 3. Implement ClassRoom and crowdsourcing features
+- [x] 3. Implement ClassRoom and crowdsourcing features
   - [x] 3.1 Implement ClassRoom Service with Many-to-Many architecture
     - Create `src/lib/services/classroom.service.ts`
     - Implement `generateClassCode` using nanoid with custom alphabet (exclude 0O, 1Il), 8 characters
@@ -136,7 +136,7 @@ This implementation plan translates the design and requirements documents into a
     - Assert single Task update (not N duplicates)
     - _Requirements: 9.1, 9.2_
   
-  - [ ] 3.5 Implement Anonymous Feed with RSA-OAEP Encryption
+  - [x] 3.5 Implement Anonymous Feed with RSA-OAEP Encryption
     - Create `src/lib/services/feed.service.ts`
     - Implement RSA public/private key pair generation (store private key securely in Vault/HSM config)
     - Implement `encryptAuthorId` using `crypto.publicEncrypt` with `RSA_PKCS1_OAEP_PADDING`
@@ -144,7 +144,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `getFeedPosts` with reverse chronological ordering and tag filtering
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.8_
   
-  - [ ]* 3.6 Write property tests for Anonymous Feed
+  - [x]* 3.6 Write property tests for Anonymous Feed
     - **Property 19: Post Submission Requires Tag Selection**
     - **Property 20: Feed Post Reverse Chronological Ordering**
     - Generate random posts with/without tags
@@ -155,7 +155,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 4. Implement Cooked Meter and Recovery Mode
-  - [ ] 4.1 Implement Cooked Meter Service with Parent Task filtering
+  - [x] 4.1 Implement Cooked Meter Service with Parent Task filtering
     - Create `src/lib/services/cooked-meter.service.ts`
     - Implement `calculateCumulativeScore` summing JIT Priority_Score for Parent Tasks ONLY (isSubTask=false filter)
     - Filter tasks with deadline in next 7 days via UserTaskProgress relationship

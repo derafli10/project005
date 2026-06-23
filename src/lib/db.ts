@@ -32,8 +32,7 @@ export function withUserContext<T>(
 const connectionString = process.env.DATABASE_URL || "";
 // @ts-ignore - The types for PoolConfig and Pool might mismatch depending on versions, ignore the assignment error
 const pool = new Pool({ connectionString });
-// @ts-expect-error - PrismaNeon might have a type mismatch with this version of Pool
-const adapter = new PrismaNeon(pool);
+const adapter = new PrismaNeon({ connectionString });
 
 function createPrismaClient() {
   const baseClient = new PrismaClient({ adapter });
