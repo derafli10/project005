@@ -165,7 +165,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `shouldOfferRecoveryMode` checking if cumulativeScore > 8000
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8, 7.1_
   
-  - [ ]* 4.2 Write property tests for Cooked Meter Service
+  - [x]* 4.2 Write property tests for Cooked Meter Service
     - **Property 12: Cooked Tier Classification by Score Range**
     - Generate random cumulative scores (0-15000)
     - Assert correct tier mapping for each score range
