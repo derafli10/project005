@@ -550,3 +550,146 @@ describe("Hybrid sort: manual position takes precedence over priorityScore", () 
     expect(queue[0]!.task.id).toBe(pinned.id);
   });
 });
+
+// ─── Property 18: Task Edit Propagation and Audit Logging ──────────────────
+
+describe("Property 18: Task Edit Propagation and Audit Logging", () => {
+  it("propagates edits to the single shared Task record and creates TaskEditLog records", async () => {
+    const prop = fc.asyncProperty(
+      fc.tuple(titleArb, taskWeightArb, futureHoursArb), // initial values
+      fc.tuple(titleArb, taskWeightArb, futureHoursArb), // updated values
+      async (initial, updatedVal) => {
+        resetInMemoryDb();
+        hydrateMock();
+
+        const [initTitle, initWeight, initHours] = initial;
+        const [updTitle, updWeight, updHours] = updatedVal;
+
+        const now = fixedNow();
+        const creatorId = seedUser();
+        const member1 = seedUser();
+        const member2 = seedUser();
+
+        // 1. Create a classroom and join members
+        const classRoom = await client.classRoom.create({
+          data: {
+            className: "Physics 101",
+            classCode: "PHY101AB",
+            sksWeight: 3,
+            creatorId,
+          },
+        });
+
+        await client.classRoomMember.create({
+          data: { classRoomId: classRoom.id, userId: creatorId },
+        });
+        await client.classRoomMember.create({
+          data: { classRoomId: classRoom.id, userId: member1 },
+        });
+        await client.classRoomMember.create({
+          data: { classRoomId: classRoom.id, userId: member2 },
+        });
+
+        // 2. Creator creates a task in the classroom
+        const deadlineAt = new Date(now.getTime() + initHours * 60 * 60 * 1000);
+        const task = await TaskService.createTask(creatorId, {
+          title: initTitle,
+          taskWeight: initWeight,
+          deadlineAt,
+          classRoomId: classRoom.id,
+        });
+
+        // 3. Creator propagates task updates
+        const updatedDeadline = new Date(now.getTime() + updHours * 60 * 60 * 1000);
+        const resultCount = await TaskService.propagateTaskUpdates(
+          task.id,
+          {
+            title: updTitle,
+            taskWeight: updWeight,
+            deadlineAt: updatedDeadline,
+          },
+          creatorId
+        );
+
+        // Assert return value is 1 (as it is a single shared Task record)
+        expect(resultCount).toBe(1);
+
+        // 4. Assert single Task record exists in the store (no duplicates created)
+        const store = getInMemoryStore();
+        expect(store.tasks.size).toBe(1);
+
+        const updatedTask = store.tasks.get(task.id);
+        expect(updatedTask).toBeDefined();
+        expect(updatedTask?.title).toBe(updTitle.trim());
+        expect(updatedTask?.taskWeight).toBe(updWeight);
+        expect(updatedTask?.deadlineAt.getTime()).toBe(updatedDeadline.getTime());
+
+        // 5. Assert TaskEditLog records are created for modified fields
+        const editLogs = Array.from(store.taskEditLogs.values()).filter(
+          (l) => l.taskId === task.id
+        );
+
+        // We check which fields actually changed to determine expected log count
+        const titleChanged = initTitle.trim() !== updTitle.trim();
+        const weightChanged = initWeight !== updWeight;
+        const deadlineChanged = deadlineAt.toISOString() !== updatedDeadline.toISOString();
+
+        let expectedLogsCount = 0;
+        if (titleChanged) expectedLogsCount++;
+        if (weightChanged) expectedLogsCount++;
+        if (deadlineChanged) expectedLogsCount++;
+
+        expect(editLogs.length).toBe(expectedLogsCount);
+
+        if (titleChanged) {
+          const log = editLogs.find((l) => l.fieldName === "title");
+          expect(log).toBeDefined();
+          expect(log?.oldValue).toBe(initTitle.trim());
+          expect(log?.newValue).toBe(updTitle.trim());
+          expect(log?.editorId).toBe(creatorId);
+        }
+
+        if (weightChanged) {
+          const log = editLogs.find((l) => l.fieldName === "taskWeight");
+          expect(log).toBeDefined();
+          expect(log?.oldValue).toBe(String(initWeight));
+          expect(log?.newValue).toBe(String(updWeight));
+          expect(log?.editorId).toBe(creatorId);
+        }
+
+        if (deadlineChanged) {
+          const log = editLogs.find((l) => l.fieldName === "deadlineAt");
+          expect(log).toBeDefined();
+          expect(log?.oldValue).toBe(deadlineAt.toISOString());
+          expect(log?.newValue).toBe(updatedDeadline.toISOString());
+          expect(log?.editorId).toBe(creatorId);
+        }
+      }
+    );
+
+    await fc.assert(prop, { numRuns: 25 });
+  });
+
+  it("rejects task updates from a non-creator", async () => {
+    resetInMemoryDb();
+    hydrateMock();
+
+    const creatorId = seedUser();
+    const otherId = seedUser();
+    const now = fixedNow();
+
+    const task = await TaskService.createTask(creatorId, {
+      title: "Shared Task",
+      taskWeight: 5000,
+      deadlineAt: new Date(now.getTime() + 48 * 3600_000),
+    });
+
+    await expect(
+      TaskService.propagateTaskUpdates(
+        task.id,
+        { title: "Unauthorized Edit" },
+        otherId
+      )
+    ).rejects.toThrow(AuthorizationError);
+  });
+});

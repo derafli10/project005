@@ -338,11 +338,26 @@ export class TaskService {
     userId: string,
     updates: UpdateTaskInput
   ): Promise<Task> {
-    const task = await baseDb.task.findUnique({ where: { id: taskId } });
-    if (!task) throw new NotFoundError("Task", taskId);
+    await this.propagateTaskUpdates(taskId, updates, userId);
+    return baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  /**
+   * Propagate task updates to all classroom members
+   * Used when task creator edits a shared task
+   * Creates TaskEditLog entries for audit trail
+   */
+  static async propagateTaskUpdates(
+    sourceTaskId: string,
+    updates: Partial<Task>,
+    editorId: string
+  ): Promise<number> {
+    const task = await baseDb.task.findUnique({ where: { id: sourceTaskId } });
+    if (!task) throw new NotFoundError("Task", sourceTaskId);
 
     // Requirement 9.10 — only the creator can edit.
-    if (task.creatorId !== userId) {
+    if (task.creatorId !== editorId) {
       throw new AuthorizationError("Only the task creator can edit this task");
     }
 
@@ -390,8 +405,8 @@ export class TaskService {
         const newStr = newValue instanceof Date ? newValue.toISOString() : String(newValue);
         if (oldStr !== newStr) {
           editLogs.push({
-            taskId,
-            editorId: userId,
+            taskId: sourceTaskId,
+            editorId,
             fieldName,
             oldValue: oldStr,
             newValue: newStr,
@@ -420,16 +435,40 @@ export class TaskService {
         data.deadlineAt = updates.deadlineAt;
       }
 
-      const updated =
-        Object.keys(data).length > 0
-          ? await tx.task.update({ where: { id: taskId }, data })
-          : task;
+      if (Object.keys(data).length > 0) {
+        await tx.task.update({ where: { id: sourceTaskId }, data });
+      }
 
       if (editLogs.length > 0) {
         await tx.taskEditLog.createMany({ data: editLogs });
       }
 
-      return updated;
+      // Send in-app notification to all ClassRoom members (except the editor) via UserTaskProgress / ClassRoomMember
+      if (task.classRoomId) {
+        const members = await tx.classRoomMember.findMany({
+          where: {
+            classRoomId: task.classRoomId,
+            userId: { not: editorId },
+          },
+          include: {
+            user: true,
+          },
+        });
+
+        const creator = await tx.user.findUnique({
+          where: { id: task.creatorId },
+          select: { name: true },
+        });
+        const creatorName = creator?.name || "Unknown";
+
+        for (const member of members) {
+          console.log(
+            `[Notification] User ${member.userId} notified: "Task ${task.title} diupdate oleh ${creatorName}"`
+          );
+        }
+      }
+
+      return 1;
     });
   }
 

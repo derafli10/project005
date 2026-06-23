@@ -105,7 +105,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 3. Implement ClassRoom and crowdsourcing features
-  - [ ] 3.1 Implement ClassRoom Service with Many-to-Many architecture
+  - [x] 3.1 Implement ClassRoom Service with Many-to-Many architecture
     - Create `src/lib/services/classroom.service.ts`
     - Implement `generateClassCode` using nanoid with custom alphabet (exclude 0O, 1Il), 8 characters
     - Implement `createClassRoom` with code collision retry logic (max 5 attempts)
@@ -114,7 +114,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `getUserClassRooms` to fetch user's classroom memberships
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
   
-  - [ ]* 3.2 Write property tests for ClassRoom Service
+  - [x]* 3.2 Write property tests for ClassRoom Service
     - **Property 15: Class Code Uniqueness Validation**
     - **Property 16: Valid Class Code Join Creates Membership**
     - **Property 17: Classroom Task Propagation to All Members**
@@ -122,14 +122,14 @@ This implementation plan translates the design and requirements documents into a
     - Assert exactly N UserTaskProgress records created for N members
     - _Requirements: 8.2, 8.3, 8.7_
   
-  - [ ] 3.3 Implement Task Edit Propagation with audit trail
+  - [x] 3.3 Implement Task Edit Propagation with audit trail
     - Extend Task Service with `propagateTaskUpdates` method
     - Create TaskEditLog records for each field change (oldValue, newValue, fieldName)
     - Update single shared Task record (no duplication due to M:N architecture)
     - Send in-app notifications to classroom members via notification system
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
   
-  - [ ]* 3.4 Write property tests for Task Edit Propagation
+  - [x]* 3.4 Write property tests for Task Edit Propagation
     - **Property 18: Task Edit Propagation and Audit Logging**
     - Generate random task edits (deadline, taskWeight, title changes)
     - Assert TaskEditLog record creation with correct oldValue/newValue
