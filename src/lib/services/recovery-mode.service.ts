@@ -45,7 +45,7 @@ export class RecoveryModeService {
     const scored = PriorityEngineService.batchCalculate(tasks, now);
     scored.sort((a, b) => b.priorityScore - a.priorityScore);
 
-    const top3Ids = scored.slice(0, 3).map((s) => s.id);
+    const top3Ids = scored.slice(0, 3).map((s) => s.task.id);
     return tasks.filter((t) => top3Ids.includes(t.id));
   }
 
@@ -221,7 +221,8 @@ export class RecoveryModeService {
    */
   static async getMotivationalText(): Promise<string> {
     const idx = Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length);
-    return MOTIVATIONAL_MESSAGES[idx];
+    const msg = MOTIVATIONAL_MESSAGES[idx];
+    return msg ?? "Let's cook! ⚡";
   }
 }
 
