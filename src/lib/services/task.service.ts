@@ -62,6 +62,21 @@ export interface UpdateTaskInput {
   deadlineAt?: Date;
 }
 
+/**
+ * Celebration context for the Academic Comeback modal (Requirements 12.1, 12.5, 12.6).
+ * Populated only when the user completes a task while in the OVERCOOKED tier.
+ */
+export interface CelebrationContext {
+  /** The user's Cooked Tier BEFORE the task was completed. Always OVERCOOKED. */
+  oldTier: CookedTier;
+  /** The user's Cooked Tier AFTER the task was completed. */
+  newTier: CookedTier;
+  /** Cumulative score drop (before − after) in basis points. */
+  stressDrop: number;
+  /** The completed task's individual taskWeight (for display). */
+  completedTaskWeight: number;
+}
+
 /** Result of {@link TaskService.completeTask}. */
 export interface CompleteTaskResult {
   task: Task;
@@ -69,8 +84,15 @@ export interface CompleteTaskResult {
   triggerCelebration: boolean;
   /** Drop in cumulative stress score (before − after). 0 when no celebration. */
   stressDrop: number;
-  oldTier?: CookedTier;
-  newTier?: CookedTier;
+  /** The user's Cooked Tier BEFORE the completion. */
+  oldTier: CookedTier;
+  /** The user's Cooked Tier AFTER the completion. */
+  newTier: CookedTier;
+  /**
+   * Populated only when `triggerCelebration` is true. Contains all data
+   * needed to render the Academic Comeback modal (Requirement 12.6).
+   */
+  celebrationContext: CelebrationContext | null;
 }
 
 /**
@@ -493,14 +515,26 @@ export class TaskService {
       throw new NotFoundError("UserTaskProgress", `${userId}/${taskId}`);
     }
     if (existing.status === "COMPLETED") {
+      const completedTask = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
+      // Compute current tiers for a stable return shape.
+      const idempotentQueue = await this.getUserTasks(
+        userId,
+        ["PENDING", "IN_PROGRESS"],
+        new Date()
+      );
+      const currentScore = this.sumParentScores(idempotentQueue);
+      const currentTier = determineCookedTier(currentScore);
       return {
-        task: await baseDb.task.findUniqueOrThrow({ where: { id: taskId } }),
+        task: completedTask,
         triggerCelebration: false,
         stressDrop: 0,
+        oldTier: currentTier,
+        newTier: currentTier,
+        celebrationContext: null,
       };
     }
 
-    // Snapshot the cumulative stress score BEFORE completion.
+    // Snapshot the cumulative stress score BEFORE completion (Requirement 12.5).
     const beforeQueue = await this.getUserTasks(
       userId,
       ["PENDING", "IN_PROGRESS"],
@@ -518,12 +552,13 @@ export class TaskService {
 
     const task = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
 
+    // Auto-complete parent if all subtasks are done (Requirement 7.9).
     if (task.isSubTask && task.parentTaskId) {
       const { RecoveryModeService } = await import("./recovery-mode.service");
       await RecoveryModeService.checkParentCompletion(task.parentTaskId, userId);
     }
 
-    // Snapshot the cumulative stress score AFTER completion.
+    // Snapshot the cumulative stress score AFTER completion (Requirement 12.5).
     const afterQueue = await this.getUserTasks(
       userId,
       ["PENDING", "IN_PROGRESS"],
@@ -533,10 +568,22 @@ export class TaskService {
     const newTier = determineCookedTier(afterScore);
     const stressDrop = Math.max(0, beforeScore - afterScore);
 
-    // Celebration fires only when the user was OVERCOOKED before completion.
+    // Celebration fires only when the user was OVERCOOKED before completion
+    // (Requirement 12.1).
     const triggerCelebration = oldTier === "OVERCOOKED";
 
-    return { task, triggerCelebration, stressDrop, oldTier, newTier };
+    // Build celebration context for the Academic Comeback modal
+    // (Requirements 12.5, 12.6).
+    const celebrationContext: CelebrationContext | null = triggerCelebration
+      ? {
+          oldTier,
+          newTier,
+          stressDrop,
+          completedTaskWeight: task.taskWeight,
+        }
+      : null;
+
+    return { task, triggerCelebration, stressDrop, oldTier, newTier, celebrationContext };
   }
 
   // ───────────────────────────────────────────────────────────────────────

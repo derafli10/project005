@@ -97,6 +97,18 @@ export interface InMemoryCookedScore {
   createdAt: Date;
 }
 
+export interface InMemoryAcademicWrapped {
+  id: string;
+  userId: string;
+  weekStartDate: Date;
+  weekEndDate: Date;
+  totalSavedCredits: number;
+  tasksCompleted: number;
+  highestTier: "MAIN_CHARACTER" | "LET_HIM_COOK" | "SLIGHTLY_COOKED" | "OVERCOOKED";
+  streak: number;
+  imageUrl: string | null;
+}
+
 export interface InMemoryStore {
   users: Map<string, InMemoryUser>;
   usersByEmail: Map<string, string>; // email(lower) → userId
@@ -111,7 +123,8 @@ export interface InMemoryStore {
   classRoomMembers: Map<string, InMemoryClassRoomMember>; // `${classRoomId}/${userId}`
   anonymousPosts: Map<string, InMemoryAnonymousPost>;
   cookedScores: Map<string, InMemoryCookedScore>; // `${userId}/${dateISO}` → score
-  counters: { user: number; session: number; task: number; override: number; editLog: number; anonymousPost: number; cookedScore: number };
+  academicWrapped: Map<string, InMemoryAcademicWrapped>; // `${userId}/${weekStartDateISO}`
+  counters: { user: number; session: number; task: number; override: number; editLog: number; anonymousPost: number; cookedScore: number; academicWrapped: number };
 }
 
 export function createInMemoryStore(): InMemoryStore {
@@ -129,7 +142,8 @@ export function createInMemoryStore(): InMemoryStore {
     classRoomMembers: new Map(),
     anonymousPosts: new Map(),
     cookedScores: new Map(),
-    counters: { user: 0, session: 0, task: 0, override: 0, editLog: 0, anonymousPost: 0, cookedScore: 0 },
+    academicWrapped: new Map(),
+    counters: { user: 0, session: 0, task: 0, override: 0, editLog: 0, anonymousPost: 0, cookedScore: 0, academicWrapped: 0 },
   };
 }
 
@@ -165,4 +179,7 @@ export function nextAnonymousPostId(s: InMemoryStore): string {
 }
 export function nextCookedScoreId(s: InMemoryStore): string {
   return `cs_${++s.counters.cookedScore}`;
+}
+export function nextAcademicWrappedId(s: InMemoryStore): string {
+  return `aw_${++s.counters.academicWrapped}`;
 }

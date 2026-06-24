@@ -83,6 +83,7 @@ model User {
   taskEditLogs     TaskEditLog[]
   cookedScores     CookedScore[]
   digestLogs       DailyDigestLog[]
+  academicWrapped  AcademicWrapped[]
 
   @@index([email])
 }
@@ -264,4 +265,23 @@ model DailyDigestLog {
 
   @@unique([userId, digestDate])
   @@index([userId])
+}
+
+model AcademicWrapped {
+  id                String     @id @default(cuid())
+  userId            String
+  weekStartDate     DateTime   @db.Date  // Monday 00:00 of target week
+  weekEndDate       DateTime   @db.Date  // Sunday 23:59 of target week
+  totalSavedCredits Int        @default(0) // SUM(taskWeight) for COMPLETED tasks in basis points
+  tasksCompleted    Int        @default(0) // Count of COMPLETED tasks in the week
+  highestTier       CookedTier @default(MAIN_CHARACTER) // Max tier reached during week
+  streak            Int        @default(0) // Consecutive days with ≥1 completed task
+  imageUrl          String?    @db.Text   // CDN URL of generated 1080x1920 PNG card
+  generatedAt       DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStartDate])
+  @@index([userId])
+  @@index([userId, weekStartDate])
 }

@@ -19,6 +19,7 @@ import {
   nextEditLogId,
   nextAnonymousPostId,
   nextCookedScoreId,
+  nextAcademicWrappedId,
   type InMemoryStore,
 } from "./store";
 
@@ -650,6 +651,91 @@ export function buildInMemoryClient() {
           };
           s.cookedScores.set(key, cs);
           return { ...cs } as any;
+        }
+      },
+    },
+
+    academicWrapped: {
+      async findMany(args: {
+        where?: {
+          userId?: string;
+        };
+        orderBy?: { weekStartDate?: "asc" | "desc" };
+        take?: number;
+      }) {
+        const s = getInMemoryStore();
+        let out: any[] = [];
+        for (const aw of s.academicWrapped.values()) {
+          if (args.where?.userId && aw.userId !== args.where.userId) continue;
+          out.push({ ...aw });
+        }
+        if (args.orderBy?.weekStartDate) {
+          const dir = args.orderBy.weekStartDate === "asc" ? 1 : -1;
+          out.sort((a, b) => {
+            const da = (a.weekStartDate as Date).getTime();
+            const db = (b.weekStartDate as Date).getTime();
+            return (da - db) * dir;
+          });
+        }
+        if (args.take !== undefined) {
+          out = out.slice(0, args.take);
+        }
+        return out;
+      },
+
+      async upsert(args: {
+        where: {
+          userId_weekStartDate: { userId: string; weekStartDate: Date };
+        };
+        create: {
+          userId: string;
+          weekStartDate: Date;
+          weekEndDate: Date;
+          totalSavedCredits: number;
+          tasksCompleted: number;
+          highestTier: string;
+          streak: number;
+          imageUrl: string | null;
+        };
+        update: {
+          weekEndDate: Date;
+          totalSavedCredits: number;
+          tasksCompleted: number;
+          highestTier: string;
+          streak: number;
+          imageUrl: string | null | undefined;
+        };
+      }) {
+        const s = getInMemoryStore();
+        const { userId, weekStartDate } = args.where.userId_weekStartDate;
+        const key = `${userId}/${weekStartDate.toISOString()}`;
+        const existing = s.academicWrapped.get(key);
+        if (existing) {
+          existing.weekEndDate = args.update.weekEndDate;
+          existing.totalSavedCredits = args.update.totalSavedCredits;
+          existing.tasksCompleted = args.update.tasksCompleted;
+          existing.highestTier = args.update.highestTier as any;
+          existing.streak = args.update.streak;
+          if (args.update.imageUrl !== undefined) {
+            existing.imageUrl = args.update.imageUrl;
+          }
+          return { ...existing } as any;
+        } else {
+          const id = nextAcademicWrappedId(s);
+          const aw = {
+            id,
+            userId,
+            weekStartDate,
+            weekEndDate: args.create.weekEndDate,
+            totalSavedCredits: args.create.totalSavedCredits,
+            tasksCompleted: args.create.tasksCompleted,
+            highestTier: args.create.highestTier as any,
+            streak: args.create.streak,
+            imageUrl: args.create.imageUrl,
+            createdAt: new Date(),
+          };
+          s.academicWrapped.set(key, aw);
+          return { ...aw } as any;
         }
       },
     },
