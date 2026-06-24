@@ -172,7 +172,7 @@ This implementation plan translates the design and requirements documents into a
     - Test boundary values: 2000, 2001, 5000, 5001, 8000, 8001
     - _Requirements: 6.3, 6.4, 6.5, 6.6_
   
-  - [ ] 4.3 Implement Recovery Mode Service with user consent
+  - [x] 4.3 Implement Recovery Mode Service with user consent
     - Create `src/lib/services/recovery-mode.service.ts`
     - Implement `getCandidateTasksForRecovery` identifying top 3 Parent Tasks with taskWeight > 3000 and isSubTask=false
     - Implement `activateRecoveryMode` with explicit taskIdsToBreakdown parameter (user consent required)

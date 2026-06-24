@@ -2,7 +2,6 @@ import "server-only";
 
 import { baseDb } from "@/lib/db";
 import { PriorityEngineService } from "./priority-engine.service";
-import { determineCookedTier } from "./task.service";
 import type { Task } from "@/generated/prisma";
 import { ValidationError, NotFoundError } from "@/lib/errors/domain-errors";
 
@@ -45,8 +44,7 @@ export class RecoveryModeService {
     const scored = PriorityEngineService.batchCalculate(tasks, now);
     scored.sort((a, b) => b.priorityScore - a.priorityScore);
 
-    const top3Ids = scored.slice(0, 3).map((s) => s.task.id);
-    return tasks.filter((t) => top3Ids.includes(t.id));
+    return scored.slice(0, 3).map((s) => s.task);
   }
 
   /**
