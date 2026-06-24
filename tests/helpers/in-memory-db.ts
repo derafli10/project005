@@ -194,13 +194,21 @@ export function buildInMemoryClient() {
       },
 
       async findMany(args: {
-        where?: { classRoomId?: string };
+        where?: {
+          classRoomId?: string;
+          parentTaskId?: string;
+          creatorId?: string;
+          isSubTask?: boolean;
+        };
         select?: Record<string, boolean>;
       }) {
         const s = getInMemoryStore();
         const out: Record<string, unknown>[] = [];
         for (const t of s.tasks.values()) {
           if (args.where?.classRoomId && t.classRoomId !== args.where.classRoomId) continue;
+          if (args.where?.parentTaskId && t.parentTaskId !== args.where.parentTaskId) continue;
+          if (args.where?.creatorId && t.creatorId !== args.where.creatorId) continue;
+          if (args.where?.isSubTask !== undefined && t.isSubTask !== args.where.isSubTask) continue;
           out.push(selectProject({ ...t }, args.select));
         }
         return out;
@@ -224,8 +232,14 @@ export function buildInMemoryClient() {
       },
 
       async findMany(args: {
-        where: { userId?: string; status?: unknown };
+        where: {
+          userId?: string;
+          status?: unknown;
+          taskId?: string | { in?: string[] };
+          task?: Record<string, unknown>;
+        };
         include?: { task?: boolean };
+        select?: Record<string, boolean | { select?: Record<string, boolean> }>;
       }) {
         const s = getInMemoryStore();
         const userId = args.where.userId as string | undefined;
@@ -233,15 +247,52 @@ export function buildInMemoryClient() {
           | { in?: string[] }
           | string
           | undefined;
+        const taskIdFilter = args.where.taskId as
+          | string
+          | { in?: string[] }
+          | undefined;
+        const taskFilter = args.where.task as
+          | {
+              isSubTask?: boolean;
+              taskWeight?: { gt?: number; gte?: number; lt?: number; lte?: number };
+              deadlineAt?: { gt?: Date; gte?: Date; lt?: Date; lte?: Date };
+            }
+          | undefined;
         const out: Record<string, unknown>[] = [];
         for (const p of s.userTaskProgress.values()) {
           if (userId && p.userId !== userId) continue;
           if (statusFilter && typeof statusFilter === "object" && "in" in statusFilter && statusFilter.in) {
             if (!statusFilter.in.includes(p.status)) continue;
           }
+          if (taskIdFilter) {
+            if (typeof taskIdFilter === "string") {
+              if (p.taskId !== taskIdFilter) continue;
+            } else if (taskIdFilter.in && !taskIdFilter.in.includes(p.taskId)) continue;
+          }
+          const taskRow = s.tasks.get(p.taskId);
+          if (taskFilter && taskRow) {
+            if (taskFilter.isSubTask !== undefined && taskRow.isSubTask !== taskFilter.isSubTask) continue;
+            if (taskFilter.taskWeight) {
+              if (taskFilter.taskWeight.gt !== undefined && !(taskRow.taskWeight > taskFilter.taskWeight.gt)) continue;
+              if (taskFilter.taskWeight.gte !== undefined && !(taskRow.taskWeight >= taskFilter.taskWeight.gte)) continue;
+              if (taskFilter.taskWeight.lt !== undefined && !(taskRow.taskWeight < taskFilter.taskWeight.lt)) continue;
+              if (taskFilter.taskWeight.lte !== undefined && !(taskRow.taskWeight <= taskFilter.taskWeight.lte)) continue;
+            }
+            if (taskFilter.deadlineAt) {
+              const t = taskRow.deadlineAt.getTime();
+              if (taskFilter.deadlineAt.gt && !(t > taskFilter.deadlineAt.gt.getTime())) continue;
+              if (taskFilter.deadlineAt.gte && !(t >= taskFilter.deadlineAt.gte.getTime())) continue;
+              if (taskFilter.deadlineAt.lt && !(t < taskFilter.deadlineAt.lt.getTime())) continue;
+              if (taskFilter.deadlineAt.lte && !(t <= taskFilter.deadlineAt.lte.getTime())) continue;
+            }
+          }
           const row: Record<string, unknown> = { ...p };
           if (args.include?.task) {
-            row.task = s.tasks.get(p.taskId) ?? null;
+            row.task = taskRow ?? null;
+          }
+          if (args.select?.task && taskRow) {
+            const sub = (args.select.task as { select?: Record<string, boolean> }).select;
+            row.task = sub ? selectProject({ ...taskRow }, sub) : { ...taskRow };
           }
           out.push(row);
         }

@@ -183,7 +183,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `getMotivationalText` fetching random Gen Z friendly message
     - _Requirements: 7.1, 7.2, 7.3, 7.5, 7.6, 7.7, 7.8_
   
-  - [ ]* 4.4 Write property tests for Recovery Mode
+  - [x]* 4.4 Write property tests for Recovery Mode
     - **Property 13: Recovery Mode Activation Threshold**
     - **Property 14: Task Breakdown Creates Micro-Tasks with Staggered Deadlines**
     - Generate random cumulative scores around 8000 threshold
