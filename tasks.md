@@ -194,8 +194,8 @@ This implementation plan translates the design and requirements documents into a
     - _Requirements: 7.1, 7.6_
 
 
-- [ ] 5. Implement viral social features
-  - [ ] 5.1 Implement Academic Wrapped Service with weekly card generation
+- [x] 5. Implement viral social features
+  - [x] 5.1 Implement Academic Wrapped Service with weekly card generation
     - Create `src/lib/services/academic-wrapped.service.ts`
     - Implement `calculateWeekStats` summing taskWeight for COMPLETED tasks in week range
     - Calculate streak: consecutive days with ≥1 completed task
@@ -210,7 +210,7 @@ This implementation plan translates the design and requirements documents into a
     - Assert tasks outside week range excluded
     - _Requirements: 11.2_
   
-  - [ ] 5.3 Implement Academic Comeback celebration system
+  - [x] 5.3 Implement Academic Comeback celebration system
     - Extend Task Service `completeTask` to detect if task in OVERCOOKED tier
     - Calculate stress drop: cumulativeScore_before - cumulativeScore_after
     - Return celebration trigger flag and stress drop value

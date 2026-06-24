@@ -238,6 +238,7 @@ export function buildInMemoryClient() {
           status?: unknown;
           taskId?: string | { in?: string[] };
           task?: Record<string, unknown>;
+          completedAt?: { gte?: Date; lte?: Date; gt?: Date; lt?: Date } | Date | null;
         };
         include?: { task?: boolean };
         select?: Record<string, boolean | { select?: Record<string, boolean> }>;
@@ -252,6 +253,11 @@ export function buildInMemoryClient() {
           | string
           | { in?: string[] }
           | undefined;
+        const completedAtFilter = args.where.completedAt as
+          | { gte?: Date; lte?: Date; gt?: Date; lt?: Date }
+          | Date
+          | null
+          | undefined;
         const taskFilter = args.where.task as
           | {
               isSubTask?: boolean;
@@ -262,13 +268,31 @@ export function buildInMemoryClient() {
         const out: Record<string, unknown>[] = [];
         for (const p of s.userTaskProgress.values()) {
           if (userId && p.userId !== userId) continue;
-          if (statusFilter && typeof statusFilter === "object" && "in" in statusFilter && statusFilter.in) {
-            if (!statusFilter.in.includes(p.status)) continue;
+          if (statusFilter) {
+            if (typeof statusFilter === "string") {
+              if (p.status !== statusFilter) continue;
+            } else if (typeof statusFilter === "object" && "in" in statusFilter && statusFilter.in) {
+              if (!statusFilter.in.includes(p.status)) continue;
+            }
           }
           if (taskIdFilter) {
             if (typeof taskIdFilter === "string") {
               if (p.taskId !== taskIdFilter) continue;
             } else if (taskIdFilter.in && !taskIdFilter.in.includes(p.taskId)) continue;
+          }
+          if (completedAtFilter !== undefined) {
+            if (completedAtFilter === null) {
+              if (p.completedAt !== null) continue;
+            } else if (completedAtFilter instanceof Date) {
+              if (!p.completedAt || p.completedAt.getTime() !== completedAtFilter.getTime()) continue;
+            } else {
+              const cat = p.completedAt ? p.completedAt.getTime() : 0;
+              if (!p.completedAt) continue;
+              if (completedAtFilter.gte && cat < completedAtFilter.gte.getTime()) continue;
+              if (completedAtFilter.lte && cat > completedAtFilter.lte.getTime()) continue;
+              if (completedAtFilter.gt && cat <= completedAtFilter.gt.getTime()) continue;
+              if (completedAtFilter.lt && cat >= completedAtFilter.lt.getTime()) continue;
+            }
           }
           const taskRow = s.tasks.get(p.taskId);
           if (taskFilter && taskRow) {
