@@ -203,7 +203,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `saveWrappedRecord` creating AcademicWrapped database record
     - _Requirements: 11.1, 11.2, 11.10_
   
-  - [ ]* 5.2 Write property tests for Academic Wrapped
+  - [x] 5.2 Write property tests for Academic Wrapped
     - **Property 21: Weekly Saved Credits Calculation**
     - Generate random task completion data across week boundaries
     - Assert correct sum of taskWeight for tasks completed within week range
@@ -217,7 +217,7 @@ This implementation plan translates the design and requirements documents into a
     - Create celebration context with oldTier, newTier, stressDrop for UI modal
     - _Requirements: 12.1, 12.5, 12.6_
   
-  - [ ]* 5.4 Write property tests for Academic Comeback
+  - [x] 5.4 Write property tests for Academic Comeback
     - **Property 22: Academic Comeback Celebration Trigger**
     - Generate tasks with cumulativeScore scenarios around OVERCOOKED threshold
     - Assert celebration triggered when completing OVERCOOKED task
