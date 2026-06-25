@@ -38,8 +38,10 @@ export class DailyDigestService {
       return false;
     }
 
-    const [digestHour, digestMin] = user.digestTime.split(":").map(Number);
-    if (isNaN(digestHour) || isNaN(digestMin)) {
+    const parts = user.digestTime.split(":").map(Number);
+    const digestHour = parts[0];
+    const digestMin = parts[1];
+    if (digestHour === undefined || digestMin === undefined || isNaN(digestHour) || isNaN(digestMin)) {
       return false;
     }
 

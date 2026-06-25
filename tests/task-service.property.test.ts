@@ -149,6 +149,11 @@ function seedUser(idOverride?: string): string {
     passwordHash: null,
     role: "MEMBER" as const,
     locale: "EN" as const,
+    digestEnabled: false,
+    digestTime: null,
+    deliveryChannel: "WHATSAPP" as const,
+    whatsappNumber: null,
+    telegramChatId: null,
     createdAt: now,
     updatedAt: now,
   };
