@@ -11,6 +11,11 @@ export interface InMemoryUser {
   passwordHash: string | null;
   role: "ADMIN" | "MEMBER";
   locale: "EN" | "ID";
+  digestEnabled: boolean;
+  digestTime: string | null;
+  deliveryChannel: "WHATSAPP" | "TELEGRAM";
+  whatsappNumber: string | null;
+  telegramChatId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,6 +114,15 @@ export interface InMemoryAcademicWrapped {
   imageUrl: string | null;
 }
 
+export interface InMemoryDailyDigestLog {
+  id: string;
+  userId: string;
+  digestDate: Date;
+  deliveryStatus: "SENT" | "FAILED";
+  errorMessage: string | null;
+  sentAt: Date;
+}
+
 export interface InMemoryStore {
   users: Map<string, InMemoryUser>;
   usersByEmail: Map<string, string>; // email(lower) → userId
@@ -124,7 +138,18 @@ export interface InMemoryStore {
   anonymousPosts: Map<string, InMemoryAnonymousPost>;
   cookedScores: Map<string, InMemoryCookedScore>; // `${userId}/${dateISO}` → score
   academicWrapped: Map<string, InMemoryAcademicWrapped>; // `${userId}/${weekStartDateISO}`
-  counters: { user: number; session: number; task: number; override: number; editLog: number; anonymousPost: number; cookedScore: number; academicWrapped: number };
+  dailyDigestLogs: Map<string, InMemoryDailyDigestLog>; // `${userId}/${digestDateISO}`
+  counters: {
+    user: number;
+    session: number;
+    task: number;
+    override: number;
+    editLog: number;
+    anonymousPost: number;
+    cookedScore: number;
+    academicWrapped: number;
+    dailyDigestLog: number;
+  };
 }
 
 export function createInMemoryStore(): InMemoryStore {
@@ -143,7 +168,18 @@ export function createInMemoryStore(): InMemoryStore {
     anonymousPosts: new Map(),
     cookedScores: new Map(),
     academicWrapped: new Map(),
-    counters: { user: 0, session: 0, task: 0, override: 0, editLog: 0, anonymousPost: 0, cookedScore: 0, academicWrapped: 0 },
+    dailyDigestLogs: new Map(),
+    counters: {
+      user: 0,
+      session: 0,
+      task: 0,
+      override: 0,
+      editLog: 0,
+      anonymousPost: 0,
+      cookedScore: 0,
+      academicWrapped: 0,
+      dailyDigestLog: 0,
+    },
   };
 }
 
@@ -182,4 +218,7 @@ export function nextCookedScoreId(s: InMemoryStore): string {
 }
 export function nextAcademicWrappedId(s: InMemoryStore): string {
   return `aw_${++s.counters.academicWrapped}`;
+}
+export function nextDailyDigestLogId(s: InMemoryStore): string {
+  return `ddl_${++s.counters.dailyDigestLog}`;
 }

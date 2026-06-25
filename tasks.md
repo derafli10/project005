@@ -226,7 +226,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 6. Implement Daily Digest with idempotent delivery
-  - [ ] 6.1 Implement Daily Digest Service with exactly-once semantics
+  - [x] 6.1 Implement Daily Digest Service with exactly-once semantics
     - Create `src/lib/services/daily-digest.service.ts`
     - Implement `generateDigestMessage` including: pending Parent Task count (isSubTask=false), top 3 by JIT Priority_Score, recent changes
     - Implement `getRecentChanges` fetching Parent Tasks added/changed in last 24 hours

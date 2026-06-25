@@ -20,6 +20,7 @@ import {
   nextAnonymousPostId,
   nextCookedScoreId,
   nextAcademicWrappedId,
+  nextDailyDigestLogId,
   type InMemoryStore,
 } from "./store";
 
@@ -85,6 +86,11 @@ export function buildInMemoryClient() {
           passwordHash: (args.data.passwordHash as string | null) ?? null,
           role: (args.data.role as "ADMIN" | "MEMBER") ?? "MEMBER",
           locale: (args.data.locale as "EN" | "ID") ?? "EN",
+          digestEnabled: (args.data.digestEnabled as boolean) ?? false,
+          digestTime: (args.data.digestTime as string | null) ?? null,
+          deliveryChannel: (args.data.deliveryChannel as "WHATSAPP" | "TELEGRAM") ?? "WHATSAPP",
+          whatsappNumber: (args.data.whatsappNumber as string | null) ?? null,
+          telegramChatId: (args.data.telegramChatId as string | null) ?? null,
           createdAt: now,
           updatedAt: now,
         };
@@ -244,21 +250,23 @@ export function buildInMemoryClient() {
         select?: Record<string, boolean | { select?: Record<string, boolean> }>;
       }) {
         const s = getInMemoryStore();
-        const userId = args.where.userId as string | undefined;
-        const statusFilter = args.where.status as
+        const userId = args.where?.userId as string | undefined;
+        console.log("DB DEBUG: searching for userId:", userId, "args.where:", JSON.stringify(args.where));
+        console.log("DB DEBUG: all progress keys in store:", Array.from(s.userTaskProgress.keys()));
+        const statusFilter = args.where?.status as
           | { in?: string[] }
           | string
           | undefined;
-        const taskIdFilter = args.where.taskId as
+        const taskIdFilter = args.where?.taskId as
           | string
           | { in?: string[] }
           | undefined;
-        const completedAtFilter = args.where.completedAt as
+        const completedAtFilter = args.where?.completedAt as
           | { gte?: Date; lte?: Date; gt?: Date; lt?: Date }
           | Date
           | null
           | undefined;
-        const taskFilter = args.where.task as
+        const taskFilter = args.where?.task as
           | {
               isSubTask?: boolean;
               taskWeight?: { gt?: number; gte?: number; lt?: number; lte?: number };
@@ -267,12 +275,22 @@ export function buildInMemoryClient() {
           | undefined;
         const out: Record<string, unknown>[] = [];
         for (const p of s.userTaskProgress.values()) {
-          if (userId && p.userId !== userId) continue;
+          console.log("DB DEBUG: evaluating row:", JSON.stringify(p));
+          if (userId && p.userId !== userId) {
+            console.log("DB DEBUG: userId mismatch:", p.userId, "expected:", userId);
+            continue;
+          }
           if (statusFilter) {
             if (typeof statusFilter === "string") {
-              if (p.status !== statusFilter) continue;
+              if (p.status !== statusFilter) {
+                console.log("DB DEBUG: status mismatch:", p.status, "expected:", statusFilter);
+                continue;
+              }
             } else if (typeof statusFilter === "object" && "in" in statusFilter && statusFilter.in) {
-              if (!statusFilter.in.includes(p.status)) continue;
+              if (!statusFilter.in.includes(p.status)) {
+                console.log("DB DEBUG: status not in array:", p.status, "expected:", statusFilter.in);
+                continue;
+              }
             }
           }
           if (taskIdFilter) {
@@ -406,6 +424,11 @@ export function buildInMemoryClient() {
         }
         return { count };
       },
+
+      async count(args: any) {
+        const rows = await client.userTaskProgress.findMany(args);
+        return rows.length;
+      },
     },
 
     taskOverride: {
@@ -441,6 +464,74 @@ export function buildInMemoryClient() {
           });
         }
         return { count: rows.length };
+      },
+
+      async findMany(args: {
+        where?: {
+          fieldName?: string;
+          editedAt?: { gte?: Date };
+          task?: {
+            isSubTask?: boolean;
+            userProgress?: {
+              some?: {
+                userId?: string;
+                status?: { in?: string[] };
+              };
+            };
+          };
+        };
+        select?: Record<string, boolean>;
+        orderBy?: { editedAt?: "asc" | "desc" };
+      }) {
+        const s = getInMemoryStore();
+        const logs = Array.from(s.taskEditLogs.values());
+        
+        const filtered = logs.filter((log) => {
+          if (args.where?.fieldName && log.fieldName !== args.where.fieldName) {
+            return false;
+          }
+          if (args.where?.editedAt?.gte && log.editedAt < args.where.editedAt.gte) {
+            return false;
+          }
+          
+          if (args.where?.task) {
+            const task = s.tasks.get(log.taskId);
+            if (!task) return false;
+            
+            if (args.where.task.isSubTask !== undefined && task.isSubTask !== args.where.task.isSubTask) {
+              return false;
+            }
+            
+            if (args.where.task.userProgress?.some) {
+              const filterUserId = args.where.task.userProgress.some.userId;
+              const filterStatusIn = args.where.task.userProgress.some.status?.in;
+              
+              const progressKey = `${filterUserId}/${task.id}`;
+              const progress = s.userTaskProgress.get(progressKey);
+              if (!progress) return false;
+              
+              if (filterStatusIn && !filterStatusIn.includes(progress.status)) {
+                return false;
+              }
+            }
+          }
+          return true;
+        });
+
+        if (args.orderBy?.editedAt) {
+          const dir = args.orderBy.editedAt === "asc" ? 1 : -1;
+          filtered.sort((a, b) => (a.editedAt.getTime() - b.editedAt.getTime()) * dir);
+        }
+
+        return filtered.map((log) => {
+          if (args.select?.task) {
+            const task = s.tasks.get(log.taskId);
+            return {
+              task: task ? { ...task } : null,
+            };
+          }
+          return { ...log };
+        }) as any;
       },
     },
 
@@ -761,6 +852,57 @@ export function buildInMemoryClient() {
           s.academicWrapped.set(key, aw);
           return { ...aw } as any;
         }
+      },
+    },
+
+    dailyDigestLog: {
+      async create(args: {
+        data: {
+          userId: string;
+          digestDate: Date;
+          deliveryStatus: "SENT" | "FAILED";
+          errorMessage?: string | null;
+        };
+      }) {
+        const s = getInMemoryStore();
+        const { userId, digestDate } = args.data;
+        const key = `${userId}/${digestDate.toISOString()}`;
+        if (s.dailyDigestLogs.has(key)) {
+          throw Object.assign(new Error("Unique constraint failed"), {
+            code: "P2002",
+          });
+        }
+        const id = nextDailyDigestLogId(s);
+        const log = {
+          id,
+          userId,
+          digestDate,
+          deliveryStatus: args.data.deliveryStatus,
+          errorMessage: args.data.errorMessage ?? null,
+          sentAt: new Date(),
+        };
+        s.dailyDigestLogs.set(key, log);
+        s.dailyDigestLogs.set(id, log);
+        return { ...log } as any;
+      },
+
+      async update(args: {
+        where: { id: string };
+        data: {
+          deliveryStatus?: "SENT" | "FAILED";
+          errorMessage?: string | null;
+        };
+      }) {
+        const s = getInMemoryStore();
+        const log = s.dailyDigestLogs.get(args.where.id);
+        if (!log) throw new Error("DailyDigestLog not found");
+        if (args.data.deliveryStatus !== undefined) {
+          log.deliveryStatus = args.data.deliveryStatus;
+        }
+        if (args.data.errorMessage !== undefined) {
+          log.errorMessage = args.data.errorMessage;
+        }
+        return { ...log } as any;
       },
     },
 
