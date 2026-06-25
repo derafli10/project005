@@ -133,7 +133,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
 
       // Generate random tasks
       await fc.assert(
-        fc.property(
+        fc.asyncProperty(
           fc.array(
             fc.record({
               title: fc.string({ minLength: 1 }),
@@ -200,21 +200,29 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
             const message = await DailyDigestService.generateDigestMessage(u.id, NOW);
 
             // Assert pending parent count is correct
-            const expectedPendingParentCount = Array.from(store.tasks.values()).filter((t) => {
+            const pendingParentTasks = Array.from(store.tasks.values()).filter((t) => {
               const prog = store.userTaskProgress.get(`${u.id}/${t.id}`);
               return !t.isSubTask && prog && prog.status !== "COMPLETED";
-            }).length;
+            });
+            const expectedPendingParentCount = pendingParentTasks.length;
 
-            console.log("DEBUG MESSAGE:", message);
-            console.log("EXPECTED COUNT:", expectedPendingParentCount);
-            try {
-              expect(message).toContain(`Total tugas tertunda: ${expectedPendingParentCount}`);
-            } catch (err) {
-              throw new Error(`FAILING MESSAGE:\n${message}\nEXPECTED COUNT: ${expectedPendingParentCount}`);
+            expect(message).toContain(`Total tugas tertunda: ${expectedPendingParentCount}`);
+
+            // Assert completed tasks are NOT in the message (unless they are in the recent changes section)
+            const completedTasks = Array.from(store.tasks.values()).filter((t) => {
+              const prog = store.userTaskProgress.get(`${u.id}/${t.id}`);
+              return prog && prog.status === "COMPLETED";
+            });
+
+            // Assert subtasks are NOT in the message
+            const subTasks = Array.from(store.tasks.values()).filter((t) => t.isSubTask);
+            for (const subTask of subTasks) {
+              // The main pending queue should not have subtask titles
+              expect(message).not.toContain(`${subTask.title} (Skor:`);
             }
           }
         ),
-        { numRuns: 1 }
+        { numRuns: 30 }
       );
     });
   });

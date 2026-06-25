@@ -251,8 +251,6 @@ export function buildInMemoryClient() {
       }) {
         const s = getInMemoryStore();
         const userId = args.where?.userId as string | undefined;
-        console.log("DB DEBUG: searching for userId:", userId, "args.where:", JSON.stringify(args.where));
-        console.log("DB DEBUG: all progress keys in store:", Array.from(s.userTaskProgress.keys()));
         const statusFilter = args.where?.status as
           | { in?: string[] }
           | string
@@ -275,20 +273,16 @@ export function buildInMemoryClient() {
           | undefined;
         const out: Record<string, unknown>[] = [];
         for (const p of s.userTaskProgress.values()) {
-          console.log("DB DEBUG: evaluating row:", JSON.stringify(p));
           if (userId && p.userId !== userId) {
-            console.log("DB DEBUG: userId mismatch:", p.userId, "expected:", userId);
             continue;
           }
           if (statusFilter) {
             if (typeof statusFilter === "string") {
               if (p.status !== statusFilter) {
-                console.log("DB DEBUG: status mismatch:", p.status, "expected:", statusFilter);
                 continue;
               }
             } else if (typeof statusFilter === "object" && "in" in statusFilter && statusFilter.in) {
               if (!statusFilter.in.includes(p.status)) {
-                console.log("DB DEBUG: status not in array:", p.status, "expected:", statusFilter.in);
                 continue;
               }
             }
@@ -313,10 +307,8 @@ export function buildInMemoryClient() {
             }
           }
           const taskRow = s.tasks.get(p.taskId);
-          console.log("DB DEBUG: taskRow found:", !!taskRow, "p.taskId:", p.taskId, "all s.tasks keys:", Array.from(s.tasks.keys()), "taskFilter:", JSON.stringify(taskFilter));
           if (taskFilter && taskRow) {
             if (taskFilter.isSubTask !== undefined && taskRow.isSubTask !== taskFilter.isSubTask) {
-              console.log("DB DEBUG: isSubTask mismatch. taskRow:", taskRow.isSubTask, "expected:", taskFilter.isSubTask);
               continue;
             }
             if (taskFilter.taskWeight) {

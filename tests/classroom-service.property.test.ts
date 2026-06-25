@@ -60,9 +60,11 @@ function bind(stub: Record<string, unknown>, real: Record<string, unknown>) {
     const realMember = real[key];
     const stubMember = stub[key];
     if (typeof realMember === "function") {
-      (stubMember as Mock).mockImplementation(
-        (realMember as (...a: unknown[]) => unknown).bind(real)
-      );
+      if (stubMember) {
+        (stubMember as Mock).mockImplementation(
+          (realMember as (...a: unknown[]) => unknown).bind(real)
+        );
+      }
     } else if (realMember && typeof realMember === "object" && stubMember) {
       bind(
         stubMember as Record<string, unknown>,

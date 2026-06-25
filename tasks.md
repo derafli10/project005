@@ -225,7 +225,7 @@ This implementation plan translates the design and requirements documents into a
     - _Requirements: 12.1_
 
 
-- [ ] 6. Implement Daily Digest with idempotent delivery
+- [x] 6. Implement Daily Digest with idempotent delivery
   - [x] 6.1 Implement Daily Digest Service with exactly-once semantics
     - Create `src/lib/services/daily-digest.service.ts`
     - Implement `generateDigestMessage` including: pending Parent Task count (isSubTask=false), top 3 by JIT Priority_Score, recent changes
@@ -238,7 +238,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `shouldSendDigest` checking current time against user digestTime ± 15 min window
     - _Requirements: 13.1, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9_
   
-  - [ ] 6.2 Implement WhatsApp and Telegram integration with retry
+  - [x] 6.2 Implement WhatsApp and Telegram integration with retry
     - Implement `sendViaWhatsApp` using Twilio/Fonnte/WhatsApp Business API
     - Implement `sendViaTelegram` using Telegram Bot API
     - Wrap both with exponential backoff retry mechanism (max 3 attempts, base delay 1000ms)
@@ -246,7 +246,7 @@ This implementation plan translates the design and requirements documents into a
     - Capture errorMessage on failure for debugging
     - _Requirements: 13.10_
   
-  - [ ]* 6.3 Write property tests for Daily Digest
+  - [x]* 6.3 Write property tests for Daily Digest
     - **Property 23: Daily Digest Task Filtering**
     - Generate random task arrays with varying deadlines and completion status
     - Assert only tasks with status ≠ COMPLETED AND deadlineAt ≤ (now + 3 days) included
