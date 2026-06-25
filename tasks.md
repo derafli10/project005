@@ -259,7 +259,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 8. Implement internationalization (i18n) [SHIFTED EARLIER TO PREVENT UI REFACTORING]
-  - [ ] 8.1 Set up i18n directory structure and translation files
+  - [x] 8.1 Set up i18n directory structure and translation files
     - Create `src/i18n/locales/en.json` with English translations
     - Create `src/i18n/locales/id.json` with Indonesian translations
     - Define translation keys for all UI strings: auth pages, dashboard, ClassRoom, Feed, settings
