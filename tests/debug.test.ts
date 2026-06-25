@@ -113,9 +113,64 @@ describe("debug", () => {
       currentStressScore: 0,
     });
 
+    // Add subtask (should be filtered out)
+    store.tasks.set("task_2", {
+      id: "task_2",
+      title: "SubTask 2",
+      description: null,
+      sksWeight: 3,
+      taskWeight: 2000,
+      deadlineAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      isSubTask: true,
+      parentTaskId: "task_1",
+      classRoomId: null,
+      creatorId: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    store.userTaskProgress.set("user_1/task_2", {
+      userId: "user_1",
+      taskId: "task_2",
+      status: "PENDING",
+      position: null,
+      completedAt: null,
+      currentStressScore: 0,
+    });
+
+    // Add completed task (should be filtered out)
+    store.tasks.set("task_3", {
+      id: "task_3",
+      title: "Completed Task 3",
+      description: null,
+      sksWeight: 3,
+      taskWeight: 4000,
+      deadlineAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      isSubTask: false,
+      parentTaskId: null,
+      classRoomId: null,
+      creatorId: "user_1",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    store.userTaskProgress.set("user_1/task_3", {
+      userId: "user_1",
+      taskId: "task_3",
+      status: "COMPLETED",
+      position: null,
+      completedAt: new Date(),
+      currentStressScore: 0,
+    });
+
     console.log("BEFORE GENERATING MESSAGE");
     const msg = await DailyDigestService.generateDigestMessage("user_1");
     console.log("GENERATED MESSAGE:");
     console.log(msg);
+
+    // Verify it only counted 1 task
+    if (!msg.includes("Total tugas tertunda: 1")) {
+      throw new Error("Filtering failed! Msg was:\n" + msg);
+    }
   });
 });

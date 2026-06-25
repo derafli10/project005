@@ -313,8 +313,12 @@ export function buildInMemoryClient() {
             }
           }
           const taskRow = s.tasks.get(p.taskId);
+          console.log("DB DEBUG: taskRow found:", !!taskRow, "p.taskId:", p.taskId, "all s.tasks keys:", Array.from(s.tasks.keys()), "taskFilter:", JSON.stringify(taskFilter));
           if (taskFilter && taskRow) {
-            if (taskFilter.isSubTask !== undefined && taskRow.isSubTask !== taskFilter.isSubTask) continue;
+            if (taskFilter.isSubTask !== undefined && taskRow.isSubTask !== taskFilter.isSubTask) {
+              console.log("DB DEBUG: isSubTask mismatch. taskRow:", taskRow.isSubTask, "expected:", taskFilter.isSubTask);
+              continue;
+            }
             if (taskFilter.taskWeight) {
               if (taskFilter.taskWeight.gt !== undefined && !(taskRow.taskWeight > taskFilter.taskWeight.gt)) continue;
               if (taskFilter.taskWeight.gte !== undefined && !(taskRow.taskWeight >= taskFilter.taskWeight.gte)) continue;
