@@ -284,7 +284,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 9. Build authentication and user management UI
-  - [ ] 9.1 Create authentication pages (Server Components)
+  - [x] 9.1 Create authentication pages (Server Components)
     - Create `src/app/(auth)/login/page.tsx` with email/password form
     - Create `src/app/(auth)/register/page.tsx` with email/password/name form
     - Wrap all static typography and labels around `getTranslation` wrappers directly
