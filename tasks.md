@@ -272,7 +272,7 @@ This implementation plan translates the design and requirements documents into a
     - Use `@formatjs/intl-localematcher` for locale detection
     - _Requirements: 2.5, 2.9_
   
-  - [ ] 8.3 Apply translations infrastructure template to routing
+  - [x] 8.3 Apply translations infrastructure template to routing
     - Ensure Next.js middleware or dynamic locale patterns can inject `locale` into layout context
     - Setup initial context providers if needed to transmit active translations down the tree
     - _Requirements: 2.3, 2.5_
