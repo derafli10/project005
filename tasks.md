@@ -265,7 +265,7 @@ This implementation plan translates the design and requirements documents into a
     - Define translation keys for all UI strings: auth pages, dashboard, ClassRoom, Feed, settings
     - _Requirements: 2.5_
   
-  - [ ] 8.2 Create i18n utility functions
+  - [x] 8.2 Create i18n utility functions
     - Create `src/i18n/utils.ts`
     - Implement `getTranslation(locale, key)` function
     - Implement `formatDate(date, locale)` with locale-specific formatting (dd/MM/yyyy for ID, MM/dd/yyyy for EN)
