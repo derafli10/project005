@@ -41,8 +41,8 @@ export type Dictionary = Record<string, string>;
  * edge runtimes (Vercel serverless, middleware, etc.).
  */
 const DICTIONARIES: Record<Locale, Dictionary> = {
-  EN: enDictionary as Dictionary,
-  ID: idDictionary as Dictionary,
+  EN: enDictionary as unknown as Dictionary,
+  ID: idDictionary as unknown as Dictionary,
 };
 
 /**

@@ -277,7 +277,7 @@ This implementation plan translates the design and requirements documents into a
     - Setup initial context providers if needed to transmit active translations down the tree
     - _Requirements: 2.3, 2.5_
   
-  - [ ]* 8.4 Write integration tests for i18n core core structure
+  - [x]* 8.4 Write integration tests for i18n core core structure
     - Test dictionary loading correctness for both `en` and `id` locales
     - Test date formatting changes based on simulated locale input
     - _Requirements: 2.3, 2.9_
