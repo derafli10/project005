@@ -31,6 +31,7 @@
   "locale.en": "English",
   "locale.id": "Bahasa Indonesia",
   "locale.switcher.label": "Language",
+  "locale.switcher.switchTo": "Switch to",
 
   "nav.dashboard": "Dashboard",
   "nav.classrooms": "Classrooms",

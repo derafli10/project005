@@ -70,12 +70,25 @@ export const authConfig = {
     },
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // On sign-in / sign-up: hydrate the token with the freshly loaded user.
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.locale = user.locale;
       }
+
+      // On a client-triggered session update (useSession().update /
+      // unstable_update) — persist the new locale claim so middleware and
+      // Server Components pick it up without a full re-login (Requirement 2.2,
+      // 2.6). `session` is unvalidated client data; whitelist the locale.
+      if (trigger === "update" && session?.user?.locale) {
+        const nextLocale = session.user.locale;
+        if (nextLocale === "EN" || nextLocale === "ID") {
+          token.locale = nextLocale;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
