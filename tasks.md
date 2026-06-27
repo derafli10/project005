@@ -309,7 +309,7 @@ This implementation plan translates the design and requirements documents into a
     - Reload page with new locale without losing state
     - _Requirements: 2.1, 2.2, 2.3, 2.6, 2.8_
   
-  - [ ] 9.4 Implement locale persistence Server Actions
+  - [x] 9.4 Implement locale persistence Server Actions
     - Create `src/app/actions/locale.ts`
     - Implement `switchLocaleAction` updating User.locale field
     - Return updated locale value for client state sync
