@@ -293,7 +293,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement session redirect logic after successful auth
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.8, 2.5_
   
-  - [ ] 9.2 Create Server Actions for authentication
+  - [x] 9.2 Create Server Actions for authentication
     - Create `src/app/(auth)/actions.ts`
     - Implement `registerAction` calling AuthService.register
     - Implement `loginAction` calling AuthService.login and setting session cookie
