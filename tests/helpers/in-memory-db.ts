@@ -98,6 +98,43 @@ export function buildInMemoryClient() {
         s.usersByEmail.set(email, id);
         return { ...user };
       },
+
+      /**
+       * Partial update of a User row (e.g. `switchLocaleAction` updating
+       * `User.locale`). Mirrors Prisma's `user.update` semantics enough for
+       * the auth-flow integration tests. Supports the `select` projection and
+       * preserves the email index if the email ever changes.
+       */
+      async update(args: {
+        where: { id: string };
+        data: Record<string, unknown>;
+        select?: Record<string, boolean>;
+      }) {
+        const s = getInMemoryStore();
+        const existing = s.users.get(args.where.id);
+        if (!existing) {
+          throw Object.assign(new Error("User not found"), { code: "P2022" });
+        }
+
+        // Maintain the email index if the email changes.
+        const newEmail = args.data.email;
+        if (typeof newEmail === "string") {
+          const normalized = newEmail.toLowerCase();
+          if (normalized !== existing.email) {
+            s.usersByEmail.delete(existing.email);
+            args.data.email = normalized;
+            s.usersByEmail.set(normalized, existing.id);
+          }
+        }
+
+        const updated = {
+          ...existing,
+          ...args.data,
+          updatedAt: new Date(),
+        } as typeof existing;
+        s.users.set(existing.id, updated);
+        return selectProject({ ...updated }, args.select);
+      },
     },
 
     session: {
