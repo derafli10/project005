@@ -5,11 +5,36 @@
   --foreground: #171717;
 }
 
+/*
+ * Design tokens (Tailwind v4 `@theme inline`).
+ *
+ * Neutrals reuse the `zinc` scale already established by the `(auth)` pages so
+ * the login → dashboard transition is visually continuous — no second design
+ * language. The only product-specific palette added here is the "Cooked" tier
+ * scale, because the "am I cooked?" meme is literally the brand: Gen-Z stress
+ * levels mapped to a green → amber → orange → red ramp.
+ *
+ * Per Requirement 6.3–6.6 (WCAG-AA-friendly light theme, 14.4.10). These
+ * tokens generate utilities such as `bg-tier-overcooked`, `text-tier-main`.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Cooked tier ramp — Requirement 6.3–6.6 */
+  --color-tier-main: #5cc88a; /* MAIN_CHARACTER — pastel green */
+  --color-tier-main-fg: #14633b;
+  --color-tier-cook: #f5c451; /* LET_HIM_COOK — yellow */
+  --color-tier-cook-fg: #7a5b08;
+  --color-tier-slight: #f59e4d; /* SLIGHTLY_COOKED — orange */
+  --color-tier-slight-fg: #8a3d09;
+  --color-tier-overcooked: #f4604d; /* OVERCOOKED — red */
+  --color-tier-overcooked-fg: #7c1d12;
+
+  /* SLA breach accent — Requirement 4.6 */
+  --color-sla: #e1322a;
 }
 
 @media (prefers-color-scheme: dark) {
