@@ -324,14 +324,14 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 10. Build main dashboard with Task Queue
-  - [ ] 10.1 Create dashboard layout (Server Component)
+  - [x] 10.1 Create dashboard layout (Server Component)
     - Create `src/app/dashboard/layout.tsx` with Bento Grid layout
     - Implement responsive grid: Desktop (4 columns), Tablet (2 columns), Mobile (1 column)
     - Add navigation with locale switcher, user profile, logout button
     - Apply Tailwind CSS 4 for styling
     - _Requirements: 14.1_
   
-  - [ ] 10.2 Create Task Queue Server Component for initial render
+  - [x] 10.2 Create Task Queue Server Component for initial render
     - Create `src/app/dashboard/page.tsx` fetching initial task data server-side
     - Call TaskService.getUserTasks with JIT priority calculation and hybrid sorting
     - Render TaskQueueClient component with initialTasks prop
