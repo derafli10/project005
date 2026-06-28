@@ -46,11 +46,17 @@ const { mockDb, mockCookies, mockAuthFn, mockUnstableUpdateFn } = vi.hoisted(() 
     user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     session: { findUnique: vi.fn(), create: vi.fn(), delete: vi.fn() },
   },
-  // `cookies()` store — a plain Map<string, string> the actions write to.
+  // `cookies()` store — a plain Map<string, string> the actions read/write.
+  // NOTE: Next's `ReadonlyRequestCookies.get()` is SYNCHRONOUS and returns
+  // `{ value }` directly (not a Promise). The actions call
+  // `cookieStore.get(name)?.value` without awaiting, so `get` MUST be sync —
+  // an async `get` would return a Promise whose `.value` is `undefined`.
+  // `set`/`delete` are awaited by the actions, so they can be async.
   mockCookies: {
     store: new Map<string, string>(),
-    async get(name: string) {
-      return { value: this.store.get(name) } as { value?: string } | undefined;
+    get(name: string) {
+      const value = this.store.get(name);
+      return value === undefined ? undefined : { value };
     },
     async set(name: string, value: string) {
       this.store.set(name, value);
@@ -105,19 +111,23 @@ vi.mock("@/i18n/server", () => ({
 
 // Service / action imports MUST come after every vi.mock declaration above.
 import { registerAction, loginAction, logoutAction } from "@/app/(auth)/actions";
-import { switchLocaleAction } from "@/app/actions/locale";
 import { SESSION_COOKIE_NAME } from "@/app/(auth)/actions";
+import { switchLocaleAction } from "@/app/actions/locale";
 import { AuthenticationError, ConflictError } from "@/lib/errors/domain-errors";
 import type { Locale } from "@/lib/validation/schemas";
 
 beforeEach(() => {
   resetInMemoryDb();
-  hydrateMock();
   mockCookies.store.clear();
+  // Reset call history + implementations FIRST, then re-hydrate so the mock
+  // points at the fresh in-memory store for this test.
+  vi.clearAllMocks();
   mockAuthFn.mockReset();
   mockUnstableUpdateFn.mockReset();
   mockUnstableUpdateFn.mockResolvedValue({});
-  vi.clearAllMocks();
+  hydrateMock();
+  // Default: unauthenticated request.
+  mockAuthFn.mockResolvedValue(null);
 });
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
@@ -133,10 +143,71 @@ function givenSignedInAs(userId: string, locale: Locale = "EN"): void {
   });
 }
 
-/** Simulate an unauthenticated request. */
+/** Drive `auth()` to return null, simulating an unauthenticated request. */
 function givenSignedOut(): void {
   mockAuthFn.mockResolvedValue(null);
 }
+
+/**
+ * Reset the mutable surfaces between fast-check iterations.
+ *
+ * The in-memory store (`tests/helpers/store.ts`) is a module-global singleton
+ * reset only in `beforeEach` — i.e. once per `it`, NOT per property iteration.
+ * fast-check runs many iterations (plus shrinking re-runs) inside a single
+ * `it`, so without an explicit reset the users/sessions created by one
+ * iteration leak into the next. That leaks the duplicate-email check in 9.5.2
+ * (a leftover row makes a fresh `email` read as "already registered", or
+ * breaks the `users.size === 1` invariant at iteration #2).
+ *
+ * The in-memory client methods read the live store via `getInMemoryStore()`
+ * at call time, so resetting the store (without re-binding the mocks) is
+ * sufficient — the bound implementations already point at whatever the
+ * current store is.
+ */
+function resetTestSurfaces(): void {
+  resetInMemoryDb();
+  mockCookies.store.clear();
+}
+
+// ─── Arbitraries (mirrors the proven auth-service.property.test.ts) ─────────
+
+/** A valid email using UUID local-part to guarantee uniqueness across iterations. */
+const validEmailArb = fc.uuid().map((uuid) => `${uuid}@test.example`);
+
+/**
+ * Build an arbitrary that produces a string of length [minLength, maxLength]
+ * using only the characters in `alphabet`. Composed from `mapToConstant`
+ * (fast-check v3.22+ removed `charset` from `StringConstraints`).
+ */
+function stringFromAlphabet(
+  alphabet: string,
+  minLength: number,
+  maxLength: number,
+): fc.Arbitrary<string> {
+  const charEntries = alphabet.split("").map((c) => ({
+    num: 1,
+    build: () => c,
+  }));
+  return fc
+    .array(fc.mapToConstant(...charEntries), { minLength, maxLength })
+    .map((chars) => chars.join(""));
+}
+
+/** A valid password ≥ 8 chars with at least one letter, one number, one special. */
+const validPasswordArb = stringFromAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%",
+  8,
+  64,
+).filter(
+  (p) => /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p),
+);
+
+/** A valid name ≥ 2 chars (letters + spaces), trimmed length ≥ 2. */
+const validNameArb = stringFromAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ",
+  2,
+  64,
+).filter((n) => n.trim().length >= 2);
 
 // ─── 1. register → verify → login → verify session ─────────────────────────
 
@@ -144,18 +215,13 @@ describe("Task 9.5.1 — Complete flow: register → verify → login → verify
   it("registers an account, verifies it, logs in, and establishes a session cookie", async () => {
     await fc.assert(
       fc.asyncProperty(
-        // Valid email guaranteed unique via UUID.
-        fc.uuid().map((id) => `${id}@test.example`),
-        // Valid password ≥ 8 chars with letter + digit + special.
-        fc
-          .stringMatching(/[a-zA-Z0-9!@#$%]{8,64}/)
-          .filter(
-            (p) =>
-              /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p),
-          ),
-        // Valid name ≥ 2 chars.
-        fc.stringMatching(/[a-zA-Z ]{2,64}/).filter((n) => n.trim().length >= 2),
+        validEmailArb,
+        validPasswordArb,
+        validNameArb,
         async (email, password, name) => {
+          // Isolate this iteration from the store/cookie state of prior runs.
+          resetTestSurfaces();
+
           // ── Register ──────────────────────────────────────────────────
           const registerResult = await registerAction({ name, email, password });
 
@@ -186,9 +252,8 @@ describe("Task 9.5.1 — Complete flow: register → verify → login → verify
 
           // ── Verify session: token persisted in the DB Session table ────
           //    (Req 1.3) AND in the HTTP-only cookie set by the action
-          //    (Req 1.5). We can't assert cookie attributes through the mock,
-          //    but the action writes to `cookies().set`, so the value must
-          //    be present in our mock store under SESSION_COOKIE_NAME.
+          //    (Req 1.5). The action writes to `cookies().set`, so the value
+          //    must be present in our mock store under SESSION_COOKIE_NAME.
           expect(mockCookies.store.get(SESSION_COOKIE_NAME)).toBeTruthy();
         },
       ),
@@ -234,6 +299,12 @@ describe("Task 9.5.1 — Complete flow: register → verify → login → verify
     // DB session destroyed.
     expect(getInMemoryStore().sessions.has(cookieToken!)).toBe(false);
   });
+
+  it("logout is idempotent — calling it with no session does not throw", async () => {
+    // No cookie set → logout should still succeed and clear nothing.
+    const result = await logoutAction();
+    expect(result.success).toBe(true);
+  });
 });
 
 // ─── 2. Duplicate email rejection ──────────────────────────────────────────
@@ -242,15 +313,15 @@ describe("Task 9.5.2 — Duplicate email rejection", () => {
   it("returns a localized error pointing at the email field when the email exists", async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid().map((id) => `${id}@test.example`),
-        fc
-          .stringMatching(/[a-zA-Z0-9!@#$%]{8,64}/)
-          .filter(
-            (p) =>
-              /[a-zA-Z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p),
-          ),
-        fc.stringMatching(/[a-zA-Z ]{2,64}/).filter((n) => n.trim().length >= 2),
+        validEmailArb,
+        validPasswordArb,
+        validNameArb,
         async (email, password, name) => {
+          // Isolate this iteration: the store is a module-global singleton
+          // reset only per `it`, so leftover rows from previous iterations
+          // would otherwise corrupt the duplicate-email assertions below.
+          resetTestSurfaces();
+
           // First registration succeeds.
           const first = await registerAction({ name, email, password });
           expect(first.success).toBe(true);
@@ -294,10 +365,9 @@ describe("Task 9.5.2 — Duplicate email rejection", () => {
     // The action translates ConflictError → fieldErrors.email. We assert the
     // underlying AuthService still throws the typed error so the contract is
     // documented at the integration boundary.
+    const { AuthService } = await import("@/lib/services/auth.service");
     await expect(
-      import("@/lib/services/auth.service").then((m) =>
-        m.AuthService.register(email, password, "Third"),
-      ),
+      AuthService.register(email, password, "Third"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 });

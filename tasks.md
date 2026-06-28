@@ -315,7 +315,7 @@ This implementation plan translates the design and requirements documents into a
     - Return updated locale value for client state sync
     - _Requirements: 2.2, 2.6_
   
-  - [ ]* 9.5 Write integration tests for authentication flow
+  - [x]* 9.5 Write integration tests for authentication flow
     - Test complete flow: register → verify account → login → verify session
     - Test duplicate email rejection
     - Test invalid credentials rejection
