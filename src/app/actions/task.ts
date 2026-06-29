@@ -188,3 +188,46 @@ export async function reorderQueueAction(
     return { success: false, error: t("error.generic") };
   }
 }
+
+/**
+ * Mark a task as completed for the current user.
+ * Delegates to TaskService.completeTask.
+ *
+ * Requirements: 4.9, 12.1
+ */
+export async function completeTaskAction(
+  taskId: string,
+): Promise<ActionResult<import("@/lib/services/task.service").CompleteTaskResult>> {
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
+  // Auth gate.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: t("error.unauthorized") };
+  }
+  const userId = session.user.id;
+
+  if (typeof taskId !== "string" || taskId.length === 0) {
+    return { success: false, error: t("error.validationFailed") };
+  }
+
+  try {
+    const result = await TaskService.completeTask(taskId, userId);
+    return { success: true, data: result };
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return { success: false, error: t("error.notFound") };
+    }
+    if (err instanceof AuthorizationError) {
+      return { success: false, error: t("error.unauthorized") };
+    }
+    if (err instanceof ValidationError) {
+      return { success: false, error: err.message };
+    }
+    if (err instanceof DomainError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: t("error.generic") };
+  }
+}

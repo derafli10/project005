@@ -63,8 +63,9 @@ import { GripVertical } from "lucide-react";
 
 import { TaskCard, type TaskCardLabels } from "./TaskCard";
 import type { QueueTask } from "@/lib/services/task.service";
-import { reorderQueueAction, reorderTaskAction } from "@/app/actions/task";
+import { reorderQueueAction, reorderTaskAction, completeTaskAction } from "@/app/actions/task";
 import { OverrideModal } from "./OverrideModal";
+import { AcademicComebackModal } from "./AcademicComebackModal";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
@@ -126,6 +127,10 @@ export function TaskQueueClient({
     nextParents: QueueTask[];
     nextTasks: QueueTask[];
   } | null>(null);
+
+  // State for Academic Comeback celebration (Task 10.6)
+  const [isComebackModalOpen, setIsComebackModalOpen] = useState(false);
+  const [celebrationContext, setCelebrationContext] = useState<import("@/lib/services/task.service").CelebrationContext | null>(null);
 
   // Pointer sensor requires a small movement threshold so a plain click never
   // starts a drag (keeps future tap-to-complete interactions intact).
@@ -255,6 +260,38 @@ export function TaskQueueClient({
     rollbackSnapshotRef.current = null;
   }, [initialTasks]);
 
+  const handleCompleteTask = useCallback(
+    async (taskId: string) => {
+      const snapshot = tasks;
+      const target = tasks.find((t) => t.task.id === taskId);
+      if (!target) return;
+
+      // Optimistic UI: filter out completed task.
+      // If it's a parent, also filter out its nested subtasks. If it's a subtask, just filter out the subtask.
+      const nextTasks = tasks.filter(
+        (t) => t.task.id !== taskId && (!(!target.task.isSubTask && t.task.parentTaskId === taskId))
+      );
+
+      setTasks(nextTasks);
+      setReorderError(null);
+
+      const result = await completeTaskAction(taskId);
+
+      if (!result.success) {
+        setTasks(snapshot);
+        setReorderError(result.error || labels.reorderFailed);
+        return;
+      }
+
+      // If Academic Comeback is triggered (celebration context exists), show the modal
+      if (result.data?.triggerCelebration && result.data.celebrationContext) {
+        setCelebrationContext(result.data.celebrationContext);
+        setIsComebackModalOpen(true);
+      }
+    },
+    [tasks, labels.reorderFailed],
+  );
+
   const dismissError = useCallback(() => setReorderError(null), []);
 
   // Empty state with illustration + motivational copy (Requirement 4.10).
@@ -300,6 +337,7 @@ export function TaskQueueClient({
                     nested={nested}
                     labels={labels}
                     disabled={isPersisting}
+                    onComplete={handleCompleteTask}
                   />
                 );
               })}
@@ -328,6 +366,13 @@ export function TaskQueueClient({
         labels={labels}
       />
 
+      {/* Academic Comeback celebration modal (Requirement 12.6) */}
+      <AcademicComebackModal
+        isOpen={isComebackModalOpen}
+        onClose={() => setIsComebackModalOpen(false)}
+        context={celebrationContext}
+      />
+
       {/* Reorder failure toast (Requirement 14.2.5). */}
       <AnimatePresence>
         {reorderError ? (
@@ -345,6 +390,7 @@ interface SortableTaskCardProps {
   nested: QueueTask[];
   labels: TaskQueueLabels;
   disabled: boolean;
+  onComplete: (taskId: string) => void;
 }
 
 function SortableTaskCard({
@@ -352,6 +398,7 @@ function SortableTaskCard({
   nested,
   labels,
   disabled,
+  onComplete,
 }: SortableTaskCardProps): React.ReactNode {
   const {
     attributes,
@@ -390,6 +437,7 @@ function SortableTaskCard({
         dragging={isDragging}
         dragHandleProps={{ attributes, listeners }}
         dragHandleLabel={labels.dragHandle}
+        onComplete={onComplete}
       />
     </motion.li>
   );

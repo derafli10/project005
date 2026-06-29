@@ -82,16 +82,36 @@ interface SubTaskRowProps {
   labels: {
     locale: "EN" | "ID";
   };
+  onComplete?: (taskId: string) => void;
 }
 
-export function SubTaskRow({ task, labels }: SubTaskRowProps): React.ReactNode {
+export function SubTaskRow({ task, labels, onComplete }: SubTaskRowProps): React.ReactNode {
   const isSlaBreach = task.timeUrgency >= 10000;
   return (
     <li
       role="listitem"
       className="flex items-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50"
     >
-      <StatusDot status={task.progress.status} />
+      {task.progress.status !== "COMPLETED" && onComplete ? (
+        <button
+          type="button"
+          onClick={() => onComplete(task.task.id)}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-zinc-400 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 transition-all dark:border-zinc-700 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/30"
+          title="Complete"
+        >
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="3"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      ) : (
+        <StatusDot status={task.progress.status} />
+      )}
       <span
         className={`min-w-0 flex-1 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300 ${
           task.progress.status === "COMPLETED" ? "line-through opacity-60" : ""
@@ -128,6 +148,7 @@ export interface TaskCardLabels {
   dragHandle?: string;
   locale: "EN" | "ID";
   microPromptTemplate?: string;
+  completeLabel?: string;
 }
 
 export interface TaskCardProps {
@@ -140,6 +161,7 @@ export interface TaskCardProps {
     listeners: DraggableSyntheticListeners;
   };
   dragHandleLabel?: string;
+  onComplete?: (taskId: string) => void;
 }
 
 export function TaskCard({
@@ -149,6 +171,7 @@ export function TaskCard({
   dragging = false,
   dragHandleProps,
   dragHandleLabel,
+  onComplete,
 }: TaskCardProps): React.ReactNode {
   const isSlaBreach = task.timeUrgency >= 10000; // max urgency bucket
   const statusLabel = statusToLabel(task.progress.status, labels);
@@ -256,6 +279,26 @@ export function TaskCard({
 
         {/* Right rail: priority score + drag handle (parent cards only). */}
         <div className="flex shrink-0 items-start gap-1.5">
+          {/* Complete action button */}
+          {task.progress.status !== "COMPLETED" && onComplete && (
+            <button
+              type="button"
+              onClick={() => onComplete(task.task.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-400 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 transition-all dark:border-zinc-800 dark:hover:border-emerald-800 dark:hover:bg-emerald-950/30"
+              title={labels.completeLabel || "Complete"}
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+          )}
+
           {/* Priority score */}
           <div className="text-right">
             <div className="text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
@@ -289,7 +332,7 @@ export function TaskCard({
           </p>
           <ul className="flex flex-col gap-2" role="list">
             {nested.map((sub) => (
-              <SubTaskRow key={sub.task.id} task={sub} labels={labels} />
+              <SubTaskRow key={sub.task.id} task={sub} labels={labels} onComplete={onComplete} />
             ))}
           </ul>
         </div>
