@@ -338,7 +338,7 @@ This implementation plan translates the design and requirements documents into a
     - Display empty state with illustration when queue empty
     - _Requirements: 4.1, 4.2, 4.10_
   
-  - [ ] 10.3 Create Task Queue Client Component with drag-and-drop
+  - [x] 10.3 Create Task Queue Client Component with drag-and-drop
     - Create `src/app/dashboard/components/TaskQueueClient.tsx` with "use client"
     - Install and configure `@dnd-kit/core` for drag-and-drop
     - Implement drag handlers with visual feedback (placeholder, elevated shadow)

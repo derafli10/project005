@@ -47,6 +47,8 @@ import {
   closestCenter,
   type DragEndEvent,
   type DragStartEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -142,11 +144,6 @@ export function TaskQueueClient({
     return map;
   }, [tasks]);
 
-  // Empty state with illustration + motivational copy (Requirement 4.10).
-  if (initialTasks.length === 0) {
-    return <EmptyState labels={labels} />;
-  }
-
   // ─── Drag handlers ──────────────────────────────────────────────────────
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -209,6 +206,13 @@ export function TaskQueueClient({
   );
 
   const dismissError = useCallback(() => setReorderError(null), []);
+
+  // Empty state with illustration + motivational copy (Requirement 4.10).
+  // Placed AFTER all hooks so the Rules of Hooks are satisfied even as the
+  // queue transitions to/from empty.
+  if (parents.length === 0) {
+    return <EmptyState labels={labels} />;
+  }
 
   return (
     <LayoutGroup>
@@ -343,8 +347,8 @@ interface TaskCardProps {
   dragging?: boolean;
   /** Drag-handle listeners for the sort context (parent cards only). */
   dragHandleProps?: {
-    attributes: Record<string, unknown>;
-    listeners: Record<string, () => void>;
+    attributes: DraggableAttributes;
+    listeners: DraggableSyntheticListeners;
   };
   dragHandleLabel?: string;
 }
@@ -453,8 +457,8 @@ function TaskCard({
               type="button"
               aria-label={dragHandleLabel}
               className="flex h-8 w-6 cursor-grab touch-none items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-              {...(dragHandleProps.attributes as Record<string, unknown>)}
-              {...(dragHandleProps.listeners as Record<string, unknown>)}
+              {...dragHandleProps.attributes}
+              {...dragHandleProps.listeners}
             >
               <GripVertical className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -487,7 +491,6 @@ interface SubTaskRowProps {
 }
 
 function SubTaskRow({ task, labels }: SubTaskRowProps): React.ReactNode {
-  const statusLabel = statusToLabel(task.progress.status, labels);
   const isSlaBreach = task.timeUrgency >= 10000;
   return (
     <li
