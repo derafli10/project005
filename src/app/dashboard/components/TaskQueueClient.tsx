@@ -61,26 +61,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
 import { GripVertical } from "lucide-react";
 
+import { TaskCard, type TaskCardLabels } from "./TaskCard";
 import type { QueueTask } from "@/lib/services/task.service";
 import { reorderQueueAction } from "@/app/actions/task";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
-export interface TaskQueueLabels {
+export interface TaskQueueLabels extends TaskCardLabels {
   /** Section title for the queue widget. */
   title: string;
-  /** Status badge labels. */
-  statusPending: string;
-  statusInProgress: string;
-  statusCompleted: string;
-  /** Deadline prefix. */
-  deadlineLabel: string;
-  /** Override / shared indicators. */
-  overrideBadge: string;
-  sharedFromClass: string;
-  subtasksLabel: string;
-  /** SLA breach badge (Requirement 4.6). */
-  slaBreach: string;
   /** Empty state (Requirement 4.10). */
   emptyTitle: string;
   emptyMessage: string;
@@ -90,6 +79,8 @@ export interface TaskQueueLabels {
   reorderFailed: string;
   /** Relative time helper, pre-applied per-task by the Server Component. */
   locale: "EN" | "ID";
+  /** Micro-prompt template key. */
+  microPromptTemplate: string;
 }
 
 interface TaskQueueClientProps {
@@ -337,242 +328,6 @@ function SortableTaskCard({
   );
 }
 
-// ─── Task card ──────────────────────────────────────────────────────────────
-
-interface TaskCardProps {
-  task: QueueTask;
-  nested: QueueTask[];
-  labels: TaskQueueLabels;
-  /** True while this card is the active drag overlay / placeholder. */
-  dragging?: boolean;
-  /** Drag-handle listeners for the sort context (parent cards only). */
-  dragHandleProps?: {
-    attributes: DraggableAttributes;
-    listeners: DraggableSyntheticListeners;
-  };
-  dragHandleLabel?: string;
-}
-
-function TaskCard({
-  task,
-  nested,
-  labels,
-  dragging = false,
-  dragHandleProps,
-  dragHandleLabel,
-}: TaskCardProps): React.ReactNode {
-  const isSlaBreach = task.timeUrgency >= 10000; // max urgency bucket
-  const statusLabel = statusToLabel(task.progress.status, labels);
-
-  return (
-    <div
-      className={
-        dragging
-          ? // Elevated card shadow for the drag overlay (Requirement 5.2).
-            "flex flex-col gap-3 rounded-xl bg-white shadow-2xl ring-2 ring-zinc-900/10 dark:bg-zinc-900"
-          : "flex flex-col gap-3"
-      }
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={task.progress.status} label={statusLabel} />
-
-            {/* Manual override indicator (Requirement 5.10). */}
-            {task.progress.position !== null ? (
-              <span
-                className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                title={labels.overrideBadge}
-              >
-                {labels.overrideBadge}
-              </span>
-            ) : null}
-
-            {/* Shared from Class indicator (Requirement 8.9). */}
-            {task.task.classRoomId ? (
-              <span
-                className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-800 dark:bg-sky-950 dark:text-sky-300"
-                title={labels.sharedFromClass}
-              >
-                {labels.sharedFromClass}
-              </span>
-            ) : null}
-
-            {/* SLA breach badge (Requirement 4.6). */}
-            {isSlaBreach ? (
-              <span
-                className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
-                title={labels.slaBreach}
-              >
-                {labels.slaBreach}
-              </span>
-            ) : null}
-          </div>
-
-          <h3
-            className={`mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50 ${
-              task.progress.status === "COMPLETED" ? "line-through opacity-60" : ""
-            }`}
-          >
-            {task.task.title}
-          </h3>
-
-          {/* Micro-prompt (Requirement 4.5). */}
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            {task.microPrompt}
-          </p>
-
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            <span className="text-zinc-400 dark:text-zinc-500">
-              {labels.deadlineLabel}:{" "}
-            </span>
-            <time
-              dateTime={task.task.deadlineAt.toISOString()}
-              className={
-                isSlaBreach
-                  ? "font-semibold text-sla"
-                  : "font-medium text-zinc-600 dark:text-zinc-300"
-              }
-            >
-              {formatDeadline(task.task.deadlineAt, labels.locale)}
-            </time>
-          </p>
-        </div>
-
-        {/* Right rail: priority score + drag handle (parent cards only). */}
-        <div className="flex shrink-0 items-start gap-1.5">
-          {/* Priority score — the queue's reason to exist; show it quietly. */}
-          <div className="text-right">
-            <div className="text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {task.priorityScore.toLocaleString()}
-            </div>
-            <div className="text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-              score
-            </div>
-          </div>
-
-          {/* Drag handle — Requirement 5.1. Only parent cards receive it. */}
-          {dragHandleProps ? (
-            <button
-              type="button"
-              aria-label={dragHandleLabel}
-              className="flex h-8 w-6 cursor-grab touch-none items-center justify-center rounded text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-              {...dragHandleProps.attributes}
-              {...dragHandleProps.listeners}
-            >
-              <GripVertical className="h-4 w-4" aria-hidden="true" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Nested SubTasks (Requirement 14.2.6). */}
-      {nested.length > 0 ? (
-        <div className="mt-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            {labels.subtasksLabel}
-          </p>
-          <ul className="flex flex-col gap-2" role="list">
-            {nested.map((sub) => (
-              <SubTaskRow key={sub.task.id} task={sub} labels={labels} />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// ─── Sub-task row (nested) ─────────────────────────────────────────────────
-
-interface SubTaskRowProps {
-  task: QueueTask;
-  labels: TaskQueueLabels;
-}
-
-function SubTaskRow({ task, labels }: SubTaskRowProps): React.ReactNode {
-  const isSlaBreach = task.timeUrgency >= 10000;
-  return (
-    <li
-      role="listitem"
-      className="flex items-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50"
-    >
-      <StatusDot status={task.progress.status} />
-      <span
-        className={`min-w-0 flex-1 truncate text-xs font-medium text-zinc-700 dark:text-zinc-300 ${
-          task.progress.status === "COMPLETED" ? "line-through opacity-60" : ""
-        }`}
-        title={task.task.title}
-      >
-        {task.task.title}
-      </span>
-      <time
-        dateTime={task.task.deadlineAt.toISOString()}
-        className={`shrink-0 text-[11px] tabular-nums ${
-          isSlaBreach
-            ? "font-semibold text-sla"
-            : "text-zinc-400 dark:text-zinc-500"
-        }`}
-      >
-        {formatDeadline(task.task.deadlineAt, labels.locale)}
-      </time>
-    </li>
-  );
-}
-
-// ─── Status primitives ──────────────────────────────────────────────────────
-
-function StatusBadge({
-  status,
-  label,
-}: {
-  status: QueueTask["progress"]["status"];
-  label: string;
-}): React.ReactNode {
-  const cls =
-    status === "COMPLETED"
-      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-      : status === "IN_PROGRESS"
-        ? "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300"
-        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StatusDot({
-  status,
-}: {
-  status: QueueTask["progress"]["status"];
-}): React.ReactNode {
-  const cls =
-    status === "COMPLETED"
-      ? "bg-emerald-500"
-      : status === "IN_PROGRESS"
-        ? "bg-sky-500"
-        : "bg-zinc-300 dark:bg-zinc-600";
-  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${cls}`} aria-hidden="true" />;
-}
-
-function statusToLabel(
-  status: QueueTask["progress"]["status"],
-  labels: TaskQueueLabels,
-): string {
-  switch (status) {
-    case "COMPLETED":
-      return labels.statusCompleted;
-    case "IN_PROGRESS":
-      return labels.statusInProgress;
-    case "PENDING":
-    default:
-      return labels.statusPending;
-  }
-}
-
 // ─── Reorder failure toast (Requirement 14.2.5) ─────────────────────────────
 
 function ReorderErrorToast({
@@ -606,19 +361,6 @@ function ReorderErrorToast({
       </div>
     </motion.div>
   );
-}
-
-// ─── Date formatting (locale-aware, Requirement 2.9) ────────────────────────
-
-function formatDeadline(date: Date, locale: "EN" | "ID"): string {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const datePart =
-    locale === "ID" ? `${day}/${month}/${year}` : `${month}/${day}/${year}`;
-  return `${datePart} ${hh}:${mm}`;
 }
 
 // ─── Empty state (Requirement 4.10) ─────────────────────────────────────────

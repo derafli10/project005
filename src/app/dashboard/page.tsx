@@ -56,6 +56,7 @@ export default async function DashboardPage() {
         dragHandle: t("queue.dragHandle"),
         reorderFailed: t("queue.reorderFailed"),
         locale,
+        microPromptTemplate: t("task.microPrompt.template"),
       }}
     />
   );

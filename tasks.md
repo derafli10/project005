@@ -348,7 +348,7 @@ This implementation plan translates the design and requirements documents into a
     - Rollback local state if Server Action fails
     - _Requirements: 5.1, 5.2, 5.3, 14.2, 14.3, 14.4_
   
-  - [ ] 10.4 Create Task Card component with micro-prompt
+  - [x] 10.4 Create Task Card component with micro-prompt
     - Create `src/app/dashboard/components/TaskCard.tsx`
     - Display title, description, deadline, status badge
     - Display micro-prompt via localization keys
