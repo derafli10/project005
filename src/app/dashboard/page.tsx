@@ -57,6 +57,16 @@ export default async function DashboardPage() {
         reorderFailed: t("queue.reorderFailed"),
         locale,
         microPromptTemplate: t("task.microPrompt.template"),
+        overrideTitle: t("override.modal.title"),
+        question: t("override.modal.question"),
+        subtitle: t("override.modal.subtitle"),
+        optionMoreUrgent: t("override.option.more_urgent"),
+        optionNeedTeam: t("override.option.need_team"),
+        optionHarder: t("override.option.harder"),
+        optionPersonal: t("override.option.personal"),
+        personalPlaceholder: t("override.modal.personalPlaceholder"),
+        submit: t("override.modal.submit"),
+        cancel: t("common.cancel"),
       }}
     />
   );

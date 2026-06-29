@@ -358,7 +358,7 @@ This implementation plan translates the design and requirements documents into a
     - Display nested SubTasks inside parent Task card (isSubTask=false renders parent, isSubTask=true nested)
     - _Requirements: 4.4, 4.5, 4.6, 4.8, 5.10, 8.9, 14.6_
   
-  - [ ] 10.5 Create Override Feedback Modal (Client Component)
+  - [x] 10.5 Create Override Feedback Modal (Client Component)
     - Create `src/app/dashboard/components/OverrideModal.tsx` as bottom-sheet
     - Trigger modal automatically on task drop event
     - Display localized question: "Kenapa kamu memindahkan tugas ini ke atas?"

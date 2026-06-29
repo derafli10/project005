@@ -63,7 +63,8 @@ import { GripVertical } from "lucide-react";
 
 import { TaskCard, type TaskCardLabels } from "./TaskCard";
 import type { QueueTask } from "@/lib/services/task.service";
-import { reorderQueueAction } from "@/app/actions/task";
+import { reorderQueueAction, reorderTaskAction } from "@/app/actions/task";
+import { OverrideModal } from "./OverrideModal";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
@@ -81,6 +82,16 @@ export interface TaskQueueLabels extends TaskCardLabels {
   locale: "EN" | "ID";
   /** Micro-prompt template key. */
   microPromptTemplate: string;
+  overrideTitle: string;
+  question: string;
+  subtitle: string;
+  optionMoreUrgent: string;
+  optionNeedTeam: string;
+  optionHarder: string;
+  optionPersonal: string;
+  personalPlaceholder: string;
+  submit: string;
+  cancel: string;
 }
 
 interface TaskQueueClientProps {
@@ -106,6 +117,15 @@ export function TaskQueueClient({
   const [isPersisting, setIsPersisting] = useState(false);
   // Snapshot used for rollback if the Server Action fails (Requirement 14.2.5).
   const rollbackSnapshotRef = useRef<QueueTask[] | null>(null);
+
+  // State for collecting manual override reason (Task 10.5).
+  const [pendingOverride, setPendingOverride] = useState<{
+    taskId: string;
+    oldIndex: number;
+    newIndex: number;
+    nextParents: QueueTask[];
+    nextTasks: QueueTask[];
+  } | null>(null);
 
   // Pointer sensor requires a small movement threshold so a plain click never
   // starts a drag (keeps future tap-to-complete interactions intact).
@@ -174,27 +194,66 @@ export function TaskQueueClient({
       rollbackSnapshotRef.current = tasks;
       setTasks(nextTasks);
       setReorderError(null);
+
+      // Open the override modal instead of persisting directly
+      setPendingOverride({
+        taskId: String(active.id),
+        oldIndex,
+        newIndex,
+        nextParents,
+        nextTasks,
+      });
+    },
+    [parents, subtasksByParent, tasks],
+  );
+
+  const handleConfirmOverride = useCallback(
+    async (reason: string) => {
+      if (!pendingOverride) return;
+      const { taskId, oldIndex, newIndex, nextParents } = pendingOverride;
+      setPendingOverride(null);
       setIsPersisting(true);
 
-      // Persist the new parent-task order (Requirement 5.3). The Server Action
-      // assigns sequential positions so the hybrid sort reproduces the exact
-      // dragged order on the next render.
-      const result = await reorderQueueAction({
+      // Persist the reason for manual override (Requirement 5.6)
+      const recordResult = await reorderTaskAction({
+        taskId,
+        oldPosition: oldIndex,
+        newPosition: newIndex,
+        reason,
+      });
+
+      if (!recordResult.success) {
+        setIsPersisting(false);
+        const snapshot = rollbackSnapshotRef.current ?? initialTasks;
+        setTasks(snapshot);
+        setReorderError(recordResult.error || labels.reorderFailed);
+        rollbackSnapshotRef.current = null;
+        return;
+      }
+
+      // Update positions of all parent tasks (Requirement 5.3)
+      const reorderResult = await reorderQueueAction({
         orderedTaskIds: nextParents.map((p) => p.task.id),
       });
 
       setIsPersisting(false);
 
-      if (!result.success) {
-        // Roll back to the pre-drag order and surface a toast.
+      if (!reorderResult.success) {
         const snapshot = rollbackSnapshotRef.current ?? initialTasks;
         setTasks(snapshot);
         setReorderError(labels.reorderFailed);
       }
       rollbackSnapshotRef.current = null;
     },
-    [parents, subtasksByParent, tasks, initialTasks, labels.reorderFailed],
+    [pendingOverride, labels.reorderFailed, initialTasks],
   );
+
+  const handleCancelOverride = useCallback(() => {
+    setPendingOverride(null);
+    const snapshot = rollbackSnapshotRef.current ?? initialTasks;
+    setTasks(snapshot);
+    rollbackSnapshotRef.current = null;
+  }, [initialTasks]);
 
   const dismissError = useCallback(() => setReorderError(null), []);
 
@@ -260,6 +319,14 @@ export function TaskQueueClient({
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Override feedback modal (Requirement 5.4) */}
+      <OverrideModal
+        isOpen={pendingOverride !== null}
+        onConfirm={handleConfirmOverride}
+        onCancel={handleCancelOverride}
+        labels={labels}
+      />
 
       {/* Reorder failure toast (Requirement 14.2.5). */}
       <AnimatePresence>
