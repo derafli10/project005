@@ -637,6 +637,72 @@ export class TaskService {
 
   // ───────────────────────────────────────────────────────────────────────
   /**
+   * Persist a drag-and-drop reorder of the user's PARENT-task queue
+   * (Requirements 5.3, 14.2.4, 14.2.5).
+   *
+   * This is the Task 10.3 entry point: the client applies the reorder
+   * optimistically and calls this method with the new ordered list of Parent
+   * Task ids so the hybrid sort (`position ASC nulls last → priorityScore DESC
+   * → deadline ASC`) reproduces the exact dragged order on the next render.
+   *
+   * Why sequential positions for *all* parents: with the nulls-last sort,
+   * writing a single task's `position` only reproduces the order for moves to
+   * the very front. Assigning every parent its array index makes the manual
+   * order fully deterministic. (SubTasks are never part of `orderedTaskIds` —
+   * they are not draggable, Requirement 14.2.6.)
+   *
+   * No `TaskOverride` row is created here — the override reason collection
+   * (Task 10.5) is a separate, later concern layered on the same drag.
+   *
+   * @param userId          The authenticated user.
+   * @param orderedTaskIds  Parent Task ids in their new queue order. Must be a
+   *                        permutation of the user's current active Parent
+   *                        Tasks (no missing, no extra ids).
+   * @throws {ValidationError} if `orderedTaskIds` is empty or malformed.
+   * @throws {NotFoundError}   if any id is not associated with the user.
+   */
+  static async reorderQueue(
+    userId: string,
+    orderedTaskIds: string[]
+  ): Promise<void> {
+    if (
+      !Array.isArray(orderedTaskIds) ||
+      orderedTaskIds.length === 0 ||
+      orderedTaskIds.some((id) => typeof id !== "string" || id.length === 0)
+    ) {
+      throw new ValidationError("orderedTaskIds must be a non-empty array of task ids");
+    }
+
+    // Guard against duplicates — a permutation has no repeats.
+    if (new Set(orderedTaskIds).size !== orderedTaskIds.length) {
+      throw new ValidationError("orderedTaskIds must not contain duplicates");
+    }
+
+    // Verify the user owns a bridge row for every id in the new order.
+    const owned = await baseDb.userTaskProgress.findMany({
+      where: { userId, taskId: { in: orderedTaskIds } },
+      select: { taskId: true },
+    });
+    const ownedIds = new Set(owned.map((row) => row.taskId));
+    const missing = orderedTaskIds.filter((id) => !ownedIds.has(id));
+    if (missing.length > 0) {
+      throw new NotFoundError("UserTaskProgress", `${userId}/${missing[0]}`);
+    }
+
+    // Assign sequential positions (0..n-1) in a single transaction so the
+    // hybrid sort deterministically reproduces the dragged order.
+    await baseDb.$transaction(
+      orderedTaskIds.map((taskId, index) =>
+        baseDb.userTaskProgress.update({
+          where: { userId_taskId: { userId, taskId } },
+          data: { position: index },
+        }),
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  /**
    * Sum the JIT priority scores of PARENT tasks only (SubTasks excluded —
    * Requirement 7.8). Used internally for Cooked Meter / Comeback detection.
    * Exposed statically so the Cooked Meter service can reuse it.

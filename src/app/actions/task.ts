@@ -120,3 +120,71 @@ export async function reorderTaskAction(
     return { success: false, error: t("error.generic") };
   }
 }
+
+// ─── REORDER ACTION (Task 10.3) ─────────────────────────────────────────────
+
+/** Input for the queue-reorder Server Action. */
+export interface ReorderQueueInput {
+  /** Parent Task ids in their new queue order. */
+  orderedTaskIds: string[];
+}
+
+/**
+ * Persist a drag-and-drop reorder of the user's PARENT-task queue
+ * (Requirements 5.3, 14.2.4, 14.2.5).
+ *
+ * This is the Task 10.3 Server Action: the client has already applied the
+ * reorder optimistically and calls this with the new ordered list of Parent
+ * Task ids so the hybrid sort (`position ASC nulls last → priorityScore DESC
+ * → deadline ASC`) reproduces the exact dragged order on the next render. It
+ * does NOT create a `TaskOverride` record — the override reason collection
+ * (Task 10.5) is wired separately atop the same drag interaction.
+ *
+ * On failure the client rolls back its local state and surfaces a toast
+ * (Requirement 14.2.5).
+ *
+ * Requirements: 5.3, 14.2.4, 14.2.5
+ */
+export async function reorderQueueAction(
+  input: ReorderQueueInput,
+): Promise<ActionResult<void>> {
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
+  // Auth gate.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: t("error.unauthorized") };
+  }
+  const userId = session.user.id;
+
+  // Basic input guard (non-empty array of non-empty strings).
+  if (
+    !Array.isArray(input.orderedTaskIds) ||
+    input.orderedTaskIds.length === 0 ||
+    input.orderedTaskIds.some(
+      (id) => typeof id !== "string" || id.length === 0,
+    )
+  ) {
+    return { success: false, error: t("error.validationFailed") };
+  }
+
+  try {
+    await TaskService.reorderQueue(userId, input.orderedTaskIds);
+    return { success: true, data: undefined };
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return { success: false, error: t("error.notFound") };
+    }
+    if (err instanceof AuthorizationError) {
+      return { success: false, error: t("error.unauthorized") };
+    }
+    if (err instanceof ValidationError) {
+      return { success: false, error: err.message };
+    }
+    if (err instanceof DomainError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: t("error.generic") };
+  }
+}

@@ -53,6 +53,8 @@ export default async function DashboardPage() {
         emptyTitle: t("queue.empty.title"),
         emptyMessage: t("queue.empty.message"),
         emptyCta: t("queue.empty.cta"),
+        dragHandle: t("queue.dragHandle"),
+        reorderFailed: t("queue.reorderFailed"),
         locale,
       }}
     />

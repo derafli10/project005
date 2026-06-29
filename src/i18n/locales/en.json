@@ -82,6 +82,8 @@
   "queue.empty.title": "All clear!",
   "queue.empty.message": "You have no pending tasks. Time to relax or get ahead.",
   "queue.empty.cta": "Create a Task",
+  "queue.dragHandle": "Drag to reorder",
+  "queue.reorderFailed": "Couldn't save the new order — moved back.",
 
   "task.create": "Create Task",
   "task.create.title": "Create Task",

@@ -82,6 +82,8 @@
   "queue.empty.title": "Aman semua!",
   "queue.empty.message": "Kamu gak ada tugas pending. Saatnya santai atau majuin kerjaan.",
   "queue.empty.cta": "Buat Tugas",
+  "queue.dragHandle": "Seret untuk mengurutkan ulang",
+  "queue.reorderFailed": "Gagal menyimpan urutan baru — dikembalikan.",
 
   "task.create": "Buat Tugas",
   "task.create.title": "Buat Tugas",
