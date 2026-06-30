@@ -375,7 +375,7 @@ This implementation plan translates the design and requirements documents into a
     - Update Cooked Meter widget after completion
     - _Requirements: 4.9, 12.1_
   
-  - [ ]* 10.7 Write integration tests for Task Queue UI
+  - [x]* 10.7 Write integration tests for Task Queue UI
     - Test drag-and-drop position change with optimistic update
     - Test rollback on Server Action failure
     - Test override modal display and reason submission
