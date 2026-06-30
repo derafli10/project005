@@ -17,6 +17,7 @@ import { Activity, Flame, ShieldAlert, Sparkles } from "lucide-react";
 import { getCookedMeterStateAction } from "@/app/actions/cooked-meter";
 import type { CookedMeterState } from "@/lib/services/cooked-meter.service";
 import type { CookedTier } from "@/generated/prisma";
+import { RecoveryModeModal } from "./RecoveryModeModal";
 
 export interface CookedMeterLabels {
   title: string;
@@ -28,6 +29,13 @@ export interface CookedMeterLabels {
   tierSlightlyCooked: string;
   tierOvercooked: string;
   locale: "EN" | "ID";
+  recoveryTitle: string;
+  recoveryMessage: string;
+  recoveryActivate: string;
+  recoveryLater: string;
+  recoveryCandidates: string;
+  recoveryActivatedTitle: string;
+  cancel: string;
 }
 
 interface CookedMeterProps {
@@ -105,9 +113,20 @@ export function CookedMeter({ initialState, labels }: CookedMeterProps): React.R
     };
   }, [handleRefresh]);
 
-  const { cumulativeScore, tier, sparklineData } = state;
+  const { cumulativeScore, tier, shouldOfferRecovery, sparklineData } = state;
   const meta = TIER_METADATA[tier] || TIER_METADATA.MAIN_CHARACTER;
   const tierName = labels[meta.labelKey];
+
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [hasDismissedRecovery, setHasDismissedRecovery] = useState(false);
+
+  useEffect(() => {
+    if (shouldOfferRecovery && !hasDismissedRecovery) {
+      setShowRecoveryModal(true);
+    } else if (!shouldOfferRecovery) {
+      setHasDismissedRecovery(false);
+    }
+  }, [shouldOfferRecovery, hasDismissedRecovery]);
 
   // GSAP Glitch Effect for OVERCOOKED Tier (Requirement 6.6)
   useEffect(() => {
@@ -277,6 +296,23 @@ export function CookedMeter({ initialState, labels }: CookedMeterProps): React.R
           </div>
         )}
       </div>
+
+      <RecoveryModeModal
+        isOpen={showRecoveryModal}
+        onClose={() => {
+          setShowRecoveryModal(false);
+          setHasDismissedRecovery(true);
+        }}
+        labels={{
+          title: labels.recoveryTitle,
+          message: labels.recoveryMessage,
+          activate: labels.recoveryActivate,
+          later: labels.recoveryLater,
+          candidates: labels.recoveryCandidates,
+          activatedTitle: labels.recoveryActivatedTitle,
+          cancel: labels.cancel,
+        }}
+      />
     </aside>
   );
 }

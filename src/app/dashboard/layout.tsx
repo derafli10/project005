@@ -102,6 +102,13 @@ export default async function DashboardLayout({
               tierSlightlyCooked: t("cooked.tier.slightly_cooked"),
               tierOvercooked: t("cooked.tier.overcooked"),
               locale,
+              recoveryTitle: t("recovery.modal.title"),
+              recoveryMessage: t("recovery.modal.message"),
+              recoveryActivate: t("recovery.modal.activate"),
+              recoveryLater: t("recovery.modal.later"),
+              recoveryCandidates: t("recovery.modal.candidates"),
+              recoveryActivatedTitle: t("recovery.activated"),
+              cancel: t("common.cancel"),
             }}
           />
 
