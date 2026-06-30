@@ -393,7 +393,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement real-time updates via React state when tasks completed/added
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.10_
   
-  - [x] 11.2 Add 7-day sparkline visualization to Cooked Meter
+  - [ ] 11.2 Add 7-day sparkline visualization to Cooked Meter
     - Fetch CookedScore records for last 7 days
     - Render sparkline mini-graph showing daily cumulativeScore trend
     - Use Recharts LineChart with minimal styling
