@@ -384,7 +384,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 11. Build Cooked Meter widget and Recovery Mode UI
-  - [ ] 11.1 Create Cooked Meter Client Component with real-time updates
+  - [x] 11.1 Create Cooked Meter Client Component with real-time updates
     - Create `src/app/dashboard/components/CookedMeter.tsx` with "use client"
     - Display progress bar or radial chart using Recharts
     - Apply tier-based colors: MAIN_CHARACTER=pastel green, LET_HIM_COOK=yellow, SLIGHTLY_COOKED=orange, OVERCOOKED=red
@@ -393,7 +393,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement real-time updates via React state when tasks completed/added
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.10_
   
-  - [ ] 11.2 Add 7-day sparkline visualization to Cooked Meter
+  - [x] 11.2 Add 7-day sparkline visualization to Cooked Meter
     - Fetch CookedScore records for last 7 days
     - Render sparkline mini-graph showing daily cumulativeScore trend
     - Use Recharts LineChart with minimal styling

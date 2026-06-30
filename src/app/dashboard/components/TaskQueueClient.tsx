@@ -247,6 +247,8 @@ export function TaskQueueClient({
         const snapshot = rollbackSnapshotRef.current ?? initialTasks;
         setTasks(snapshot);
         setReorderError(labels.reorderFailed);
+      } else {
+        window.dispatchEvent(new CustomEvent("task-updated"));
       }
       rollbackSnapshotRef.current = null;
     },
@@ -282,6 +284,8 @@ export function TaskQueueClient({
         setReorderError(result.error || labels.reorderFailed);
         return;
       }
+
+      window.dispatchEvent(new CustomEvent("task-updated"));
 
       // If Academic Comeback is triggered (celebration context exists), show the modal
       if (result.data?.triggerCelebration && result.data.celebrationContext) {

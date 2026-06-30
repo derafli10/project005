@@ -9,6 +9,8 @@ import { getLocale } from "@/i18n/server";
 
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { LogoutButton } from "./components/LogoutButton";
+import { CookedMeter } from "./components/CookedMeter";
+import { CookedMeterService } from "@/lib/services/cooked-meter.service";
 
 /**
  * Dashboard layout — Server Component app shell.
@@ -48,6 +50,8 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const cookedMeterState = await CookedMeterService.getMeterState(session.user.id);
+
   const displayName =
     (session.user.name?.trim() || session.user.email || "").split(" ")[0] ?? "";
   const targetLocale = locale === "EN" ? "ID" : "EN";
@@ -86,9 +90,19 @@ export default async function DashboardLayout({
           </section>
 
           {/* Widget B — Cooked Meter (Task 11). */}
-          <WidgetPlaceholder
-            label={t("dashboard.widget.cookedMeter")}
-            ariaLabel={t("cooked.meter.title")}
+          <CookedMeter
+            initialState={cookedMeterState}
+            labels={{
+              title: t("cooked.meter.title"),
+              currentScore: t("cooked.meter.currentScore"),
+              sparkline: t("cooked.meter.sparkline"),
+              updatedNow: t("cooked.meter.updatedNow"),
+              tierMainCharacter: t("cooked.tier.main_character"),
+              tierLetHimCook: t("cooked.tier.let_him_cook"),
+              tierSlightlyCooked: t("cooked.tier.slightly_cooked"),
+              tierOvercooked: t("cooked.tier.overcooked"),
+              locale,
+            }}
           />
 
           {/* Widget C — Classroom Feed (Task 15). */}
