@@ -400,7 +400,7 @@ This implementation plan translates the design and requirements documents into a
     - Apply tier-based color gradient to sparkline
     - _Requirements: 6.7, 6.8_
   
-  - [ ] 11.3 Create Recovery Mode offer modal (Client Component)
+  - [x] 11.3 Create Recovery Mode offer modal (Client Component)
     - Create `src/app/dashboard/components/RecoveryModeModal.tsx`
     - Trigger modal display when cumulativeScore > 8000 (from Cooked Meter check)
     - Display message: "Beban tugasmu tinggi. Aktifkan Recovery Mode untuk breakdown tugas kompleks?"
@@ -409,7 +409,7 @@ This implementation plan translates the design and requirements documents into a
     - Add action buttons: "Aktifkan" and "Nanti Saja"
     - _Requirements: 7.1, 7.2, 7.3, 14.3.1_
   
-  - [ ] 11.4 Implement Recovery Mode activation Server Action
+  - [x] 11.4 Implement Recovery Mode activation Server Action
     - Create `src/app/actions/recovery.ts`
     - Implement `activateRecoveryModeAction` receiving array of taskIdsToBreakdown
     - Call RecoveryModeService.activateRecoveryMode with user consent

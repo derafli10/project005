@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ShieldAlert, Sparkles, X } from "lucide-react";
+import { Check, ShieldAlert, Sparkles, X, Calendar } from "lucide-react";
 
-import { getRecoveryCandidatesAction, activateRecoveryModeAction, type RecoveryCandidateView } from "@/app/actions/recovery";
+import {
+  getRecoveryCandidatesAction,
+  activateRecoveryModeAction,
+  type RecoveryCandidateView,
+  type TaskBreakdownView,
+} from "@/app/actions/recovery";
 
 export interface RecoveryModeModalLabels {
   title: string;
@@ -32,12 +37,14 @@ export function RecoveryModeModal({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [breakdownResults, setBreakdownResults] = useState<TaskBreakdownView[]>([]);
 
   // Fetch candidate tasks when modal opens
   useEffect(() => {
     if (!isOpen) {
       setSuccessMsg(null);
       setSelectedIds([]);
+      setBreakdownResults([]);
       return;
     }
 
@@ -71,6 +78,7 @@ export function RecoveryModeModal({
 
     if (res.success && res.data) {
       setSuccessMsg(res.data.motivationalText);
+      setBreakdownResults(res.data.tasksBreakdown);
       // Dispatch event to refresh layout and queue
       window.dispatchEvent(new CustomEvent("task-updated"));
       // Close the modal after a short delay so user can read the motivational text
@@ -112,21 +120,62 @@ export function RecoveryModeModal({
             </button>
 
             {successMsg ? (
-              /* Success State */
+              /* Success State — show motivational text + breakdown results */
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-6 text-center"
+                className="flex flex-col py-4"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
-                  <Sparkles className="h-6 w-6 animate-bounce" />
+                <div className="mb-4 flex flex-col items-center text-center">
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                    <Sparkles className="h-6 w-6 animate-bounce" />
+                  </div>
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                    {labels.activatedTitle}
+                  </h3>
+                  <p className="mt-2 text-sm italic text-zinc-600 dark:text-zinc-400">
+                    "{successMsg}"
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                  {labels.activatedTitle}
-                </h3>
-                <p className="mt-2 text-sm italic text-zinc-600 dark:text-zinc-400">
-                  "{successMsg}"
-                </p>
+
+                {/* Breakdown Results — created SubTasks per parent (Req 7.3) */}
+                {breakdownResults.length > 0 && (
+                  <div className="mt-2 max-h-48 space-y-3 overflow-y-auto">
+                    {breakdownResults.map((entry) => (
+                      <div
+                        key={entry.parentTaskId}
+                        className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900/40"
+                      >
+                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                          {entry.parentTaskTitle}
+                        </p>
+                        <ul className="space-y-1">
+                          {entry.subTasks.map((st) => {
+                            const deadline = new Date(st.deadlineAt);
+                            const dateStr = deadline.toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            });
+                            return (
+                              <li
+                                key={st.id}
+                                className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 text-[11px] dark:bg-zinc-950"
+                              >
+                                <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">
+                                  {st.title}
+                                </span>
+                                <span className="ml-2 flex shrink-0 items-center gap-1 text-zinc-400">
+                                  <Calendar className="h-3 w-3" />
+                                  {dateStr}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             ) : (
               /* Configuration / Consent State */
