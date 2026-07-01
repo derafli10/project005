@@ -417,7 +417,7 @@ This implementation plan translates the design and requirements documents into a
     - Display motivational text in success response
     - _Requirements: 7.2, 7.3, 7.9, 14.3.2, 14.3.3_
   
-  - [ ] 11.5 Update Cooked Meter to exclude SubTasks from stress calculation
+  - [x] 11.5 Update Cooked Meter to exclude SubTasks from stress calculation
     - Modify CookedMeterService.calculateCumulativeScore to filter isSubTask=false
     - Ensure only Parent Task priorityScores summed
     - Update frontend to display correct cumulative score after Recovery Mode activation

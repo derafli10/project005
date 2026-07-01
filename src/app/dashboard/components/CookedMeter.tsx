@@ -265,7 +265,7 @@ export function CookedMeter({ initialState, labels }: CookedMeterProps): React.R
                 <XAxis hide dataKey="day" />
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
+                    if (active && payload && payload.length && payload[0]) {
                       const dataPoint = payload[0].payload;
                       return (
                         <div className="rounded border border-zinc-200 bg-white px-2 py-1 text-[10px] font-medium shadow dark:border-zinc-800 dark:bg-zinc-900">
