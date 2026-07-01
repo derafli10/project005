@@ -433,7 +433,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 12. Build ClassRoom features
-  - [ ] 12.1 Create ClassRoom list page (Server Component)
+  - [x] 12.1 Create ClassRoom list page (Server Component)
     - Create `src/app/classrooms/page.tsx`
     - Fetch user's classroom memberships server-side via ClassRoomService.getUserClassRooms
     - Display classroom cards with name, classCode, member count, join date
