@@ -423,7 +423,7 @@ This implementation plan translates the design and requirements documents into a
     - Update frontend to display correct cumulative score after Recovery Mode activation
     - _Requirements: 7.8, 14.3.4_
   
-  - [ ]* 11.6 Write integration tests for Recovery Mode
+  - [x]* 11.6 Write integration tests for Recovery Mode
     - Test modal display when cumulativeScore > 8000
     - Test modal dismissal on "Nanti Saja"
     - Test task breakdown with user selection
