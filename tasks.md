@@ -461,7 +461,7 @@ This implementation plan translates the design and requirements documents into a
     - Implement `leaveClassRoomAction` deleting UserTaskProgress records for classroom tasks
     - _Requirements: 8.1, 8.4, 8.5, 8.10_
   
-  - [ ] 12.5 Create ClassRoom detail page with member list
+  - [x] 12.5 Create ClassRoom detail page with member list
     - Create `src/app/classrooms/[id]/page.tsx`
     - Fetch classroom details and member list server-side
     - Display classroom name, sksWeight, member count
