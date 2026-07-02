@@ -440,7 +440,7 @@ This implementation plan translates the design and requirements documents into a
     - Add "Create Class" and "Join Class" buttons
     - _Requirements: 8.6_
   
-  - [ ] 12.2 Create ClassRoom creation form (Client Component)
+  - [x] 12.2 Create ClassRoom creation form (Client Component)
     - Create `src/app/classrooms/components/CreateClassForm.tsx`
     - Input fields: className, sksWeight (1-5 dropdown)
     - Call Server Action to create classroom
