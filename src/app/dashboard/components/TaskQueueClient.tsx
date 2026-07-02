@@ -59,13 +59,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Plus, X } from "lucide-react";
 
 import { TaskCard, type TaskCardLabels } from "./TaskCard";
 import type { QueueTask } from "@/lib/services/task.service";
 import { reorderQueueAction, reorderTaskAction, completeTaskAction } from "@/app/actions/task";
 import { OverrideModal } from "./OverrideModal";
 import { AcademicComebackModal } from "./AcademicComebackModal";
+import { CreateTaskForm, type ClassroomOption, type CreateTaskFormLabels } from "./CreateTaskForm";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
@@ -93,16 +94,23 @@ export interface TaskQueueLabels extends TaskCardLabels {
   personalPlaceholder: string;
   submit: string;
   cancel: string;
+  /** Label for the "Create Task" button (Requirements 8.6, 8.7). */
+  createTask: string;
+  /** Pre-localized labels for the CreateTaskForm modal. */
+  createTaskFormLabels: CreateTaskFormLabels;
 }
 
 interface TaskQueueClientProps {
   /** Initial queue, already sorted by the Server Component (Req 4.2, 4.3). */
   initialTasks: QueueTask[];
+  /** Classrooms the user belongs to, for the "Share to Class" dropdown. */
+  classrooms: ClassroomOption[];
   labels: TaskQueueLabels;
 }
 
 export function TaskQueueClient({
   initialTasks,
+  classrooms,
   labels,
 }: TaskQueueClientProps): React.ReactNode {
   // The full queue (parents + subtasks). Kept in state so optimistic reorders
@@ -127,6 +135,9 @@ export function TaskQueueClient({
     nextParents: QueueTask[];
     nextTasks: QueueTask[];
   } | null>(null);
+
+  // State for the Create Task modal (Requirements 8.6, 8.7, 8.8).
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // State for Academic Comeback celebration (Task 10.6)
   const [isComebackModalOpen, setIsComebackModalOpen] = useState(false);
@@ -302,7 +313,17 @@ export function TaskQueueClient({
   // Placed AFTER all hooks so the Rules of Hooks are satisfied even as the
   // queue transitions to/from empty.
   if (parents.length === 0) {
-    return <EmptyState labels={labels} />;
+    return (
+      <>
+        <EmptyState labels={labels} onCreateTask={() => setIsCreateModalOpen(true)} />
+        <CreateTaskModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          classrooms={classrooms}
+          labels={labels.createTaskFormLabels}
+        />
+      </>
+    );
   }
 
   return (
@@ -312,12 +333,23 @@ export function TaskQueueClient({
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
             {labels.title}
           </h2>
-          <span
-            className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-            aria-label={`${parents.length} ${labels.title}`}
-          >
-            {parents.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+              aria-label={`${parents.length} ${labels.title}`}
+            >
+              {parents.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              aria-label={labels.createTask}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{labels.createTask}</span>
+            </button>
+          </div>
         </header>
 
         <DndContext
@@ -375,6 +407,14 @@ export function TaskQueueClient({
         isOpen={isComebackModalOpen}
         onClose={() => setIsComebackModalOpen(false)}
         context={celebrationContext}
+      />
+
+      {/* Create Task modal (Requirements 8.6, 8.7, 8.8) */}
+      <CreateTaskModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        classrooms={classrooms}
+        labels={labels.createTaskFormLabels}
       />
 
       {/* Reorder failure toast (Requirement 14.2.5). */}
@@ -484,7 +524,13 @@ function ReorderErrorToast({
 
 // ─── Empty state (Requirement 4.10) ─────────────────────────────────────────
 
-function EmptyState({ labels }: { labels: TaskQueueLabels }): React.ReactNode {
+function EmptyState({
+  labels,
+  onCreateTask,
+}: {
+  labels: TaskQueueLabels;
+  onCreateTask: () => void;
+}): React.ReactNode {
   return (
     <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-8 text-center dark:border-zinc-800 dark:bg-zinc-950/40">
       {/* Inline SVG illustration — a calm "all clear" checkmark, not a generic
@@ -522,10 +568,76 @@ function EmptyState({ labels }: { labels: TaskQueueLabels }): React.ReactNode {
       <p className="mt-1 max-w-xs text-sm text-zinc-500 dark:text-zinc-400">
         {labels.emptyMessage}
       </p>
-      {/* CTA is presentational; wiring the create-task flow is Task 10.6+ scope. */}
-      <span className="mt-4 inline-flex h-9 items-center rounded-full bg-zinc-900 px-4 text-xs font-medium text-white dark:bg-zinc-50 dark:text-zinc-900">
+      <button
+        type="button"
+        onClick={onCreateTask}
+        className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-full bg-zinc-900 px-4 text-xs font-medium text-white transition-all hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+      >
+        <Plus className="h-3.5 w-3.5" />
         {labels.emptyCta}
-      </span>
+      </button>
     </div>
+  );
+}
+
+// ─── Create Task modal dialog ────────────────────────────────────────────────
+
+function CreateTaskModal({
+  isOpen,
+  onClose,
+  classrooms,
+  labels,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  classrooms: ClassroomOption[];
+  labels: CreateTaskFormLabels;
+}): React.ReactNode {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="create-task-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          />
+
+          {/* Panel */}
+          <motion.div
+            className="relative z-10 w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
+            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 16 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, duration: 0.25 }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-3 top-3 rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-300"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <CreateTaskForm
+              onClose={onClose}
+              classrooms={classrooms}
+              labels={labels}
+            />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -29,6 +29,7 @@ import {
 } from "@/lib/validation/schemas";
 import { createTranslator } from "@/i18n/utils";
 import { getLocale } from "@/i18n/server";
+import { revalidatePath } from "next/cache";
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -231,3 +232,88 @@ export async function completeTaskAction(
     return { success: false, error: t("error.generic") };
   }
 }
+
+/** Input for the createTask Server Action. */
+export interface CreateTaskActionInput {
+  title: string;
+  description?: string;
+  sksWeight?: number;
+  taskWeight: number; // basis points
+  deadlineAt: string; // ISO datetime string
+  classRoomId?: string;
+}
+
+/**
+ * Server Action to create a new task.
+ *
+ * Validates inputs via Zod `createTaskSchema` and delegates to TaskService.createTask.
+ *
+ * Requirements: 8.6, 8.7, 8.8
+ */
+export async function createTaskAction(
+  input: CreateTaskActionInput
+): Promise<ActionResult<{ id: string; title: string; classRoomId: string | null }>> {
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
+  // Auth gate.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: t("error.unauthorized") };
+  }
+  const userId = session.user.id;
+
+  // Validate inputs.
+  const { createTaskSchema } = await import("@/lib/validation/schemas");
+  const parsed = createTaskSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: t("error.validationFailed") || "Validation failed",
+      fieldErrors: collectFieldErrors(parsed.error.issues as ZodIssueLike[]),
+    };
+  }
+
+  try {
+    const task = await TaskService.createTask(userId, {
+      title: parsed.data.title,
+      description: parsed.data.description,
+      sksWeight: parsed.data.sksWeight,
+      taskWeight: parsed.data.taskWeight,
+      deadlineAt: new Date(parsed.data.deadlineAt),
+      classRoomId: parsed.data.classRoomId,
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/classrooms");
+
+    return {
+      success: true,
+      data: {
+        id: task.id,
+        title: task.title,
+        classRoomId: task.classRoomId,
+      },
+    };
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return { success: false, error: t("error.notFound") };
+    }
+    if (err instanceof AuthorizationError) {
+      return { success: false, error: t("error.unauthorized") };
+    }
+    if (err instanceof ValidationError) {
+      const field = err.details?.field;
+      return {
+        success: false,
+        error: err.message,
+        fieldErrors: typeof field === "string" ? { [field]: [err.message] } : undefined,
+      };
+    }
+    if (err instanceof DomainError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: t("error.generic") };
+  }
+}
+

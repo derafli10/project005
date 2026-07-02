@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 import { TaskService } from "@/lib/services/task.service";
+import { classRoomService } from "@/lib/services/classroom.service";
 import { createTranslator } from "@/i18n/utils";
 import { getLocale } from "@/i18n/server";
 
@@ -20,7 +21,10 @@ import { TaskQueueClient } from "./components/TaskQueueClient";
  * they disappear from the queue without a full page refresh once the
  * completion flow (Task 10.6) wires the optimistic update (Requirement 4.9).
  *
- * Requirements: 4.1, 4.2, 4.3, 4.7, 4.10
+ * Also fetches the user's classroom memberships so the task creation form
+ * can offer a "Share to Class" dropdown (Requirements 8.6, 8.7, 8.8).
+ *
+ * Requirements: 4.1, 4.2, 4.3, 4.7, 4.10, 8.6, 8.7, 8.8
  */
 export default async function DashboardPage() {
   const locale = await getLocale();
@@ -37,9 +41,18 @@ export default async function DashboardPage() {
   // JIT evaluation + hybrid sort (Requirements 4.2, 4.3, 4.7).
   const initialTasks = await TaskService.getUserTasks(userId);
 
+  // Fetch classroom memberships for the "Share to Class" dropdown (Requirements 8.6, 8.7).
+  const memberships = await classRoomService.getUserClassRooms(userId);
+  const classrooms = memberships.map((m) => ({
+    id: m.classRoom.id,
+    className: m.classRoom.className,
+    sksWeight: m.classRoom.sksWeight,
+  }));
+
   return (
     <TaskQueueClient
       initialTasks={initialTasks}
+      classrooms={classrooms}
       labels={{
         title: t("queue.title"),
         statusPending: t("task.status.PENDING"),
@@ -67,6 +80,23 @@ export default async function DashboardPage() {
         personalPlaceholder: t("override.modal.personalPlaceholder"),
         submit: t("override.modal.submit"),
         cancel: t("common.cancel"),
+        createTask: t("task.create"),
+        createTaskFormLabels: {
+          title: t("task.create.title"),
+          titleLabel: t("task.create.titleLabel"),
+          titlePlaceholder: t("task.create.titlePlaceholder"),
+          descriptionLabel: t("task.create.descriptionLabel"),
+          descriptionPlaceholder: t("task.create.descriptionPlaceholder"),
+          taskWeightLabel: t("task.create.taskWeightLabel"),
+          taskWeightHint: t("task.create.taskWeightHint"),
+          sksWeightLabel: t("task.create.sksWeightLabel"),
+          deadlineLabel: t("task.create.deadlineLabel"),
+          classRoomLabel: t("task.create.classRoomLabel"),
+          classRoomNone: t("task.create.classRoomNone"),
+          submit: t("task.create.submit"),
+          success: t("task.create.success"),
+          cancel: t("common.cancel"),
+        },
       }}
     />
   );
