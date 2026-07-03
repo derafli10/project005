@@ -259,5 +259,7 @@
   "error.validationFailed": "Cek lagi input kamu",
   "toast.saved": "Tersimpan",
   "toast.failed": "Aksi gagal",
-  "toast.copied": "Tersalin ke clipboard"
+  "toast.copied": "Tersalin ke clipboard",
+  "notification.updated": "Task {title} diupdate oleh {name}",
+  "notification.viewHistory": "Lihat riwayat"
 }

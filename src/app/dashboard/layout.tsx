@@ -9,6 +9,7 @@ import { getLocale } from "@/i18n/server";
 import { DashboardNav } from "@/components/DashboardNav";
 import { CookedMeter } from "./components/CookedMeter";
 import { CookedMeterService } from "@/lib/services/cooked-meter.service";
+import { InAppNotifications } from "./components/InAppNotifications";
 
 /**
  * Dashboard layout — Server Component app shell.
@@ -48,7 +49,9 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const cookedMeterState = await CookedMeterService.getMeterState(session.user.id);
+  const cookedMeterState = await CookedMeterService.getMeterState(
+    session.user.id,
+  );
 
   const displayName =
     (session.user.name?.trim() || session.user.email || "").split(" ")[0] ?? "";
@@ -56,6 +59,10 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-svh flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
+      <InAppNotifications
+        notificationUpdatedTemplate={t("notification.updated")}
+        viewHistoryLabel={t("notification.viewHistory")}
+      />
       <DashboardNav
         appName={t("common.appName")}
         navDashboard={t("nav.dashboard")}
@@ -68,9 +75,7 @@ export default async function DashboardLayout({
           ariaLabel: t("locale.switcher.label"),
           switchToHint: t("locale.switcher.switchTo"),
           otherLocaleName:
-            targetLocale === "ID"
-              ? t("locale.id")
-              : t("locale.en"),
+            targetLocale === "ID" ? t("locale.id") : t("locale.en"),
         }}
         currentLocale={locale}
       />
@@ -150,7 +155,10 @@ function WidgetPlaceholder({
       className={`flex min-h-[10rem] flex-col rounded-2xl border border-dashed border-zinc-200 bg-white/60 p-5 dark:border-zinc-800 dark:bg-zinc-950/40 ${className}`}
     >
       <div className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-700" aria-hidden="true" />
+        <span
+          className="h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-700"
+          aria-hidden="true"
+        />
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           {label}
         </h3>

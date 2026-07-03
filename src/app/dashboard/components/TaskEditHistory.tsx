@@ -18,7 +18,7 @@
  * Requirements: 9.4, 9.5, 9.6
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, History } from "lucide-react";
 
@@ -145,6 +145,36 @@ export function TaskEditHistory({
       }
       return next;
     });
+  }, [onOpen, status, taskId]);
+
+  useEffect(() => {
+    const handleOpenEvent = () => {
+      setIsOpen((prev) => {
+        if (!prev) {
+          onOpen?.();
+          if (status === "idle") {
+            setStatus("loading");
+            getTaskEditHistoryAction(taskId)
+              .then((res) => {
+                if (res.success) {
+                  setEntries(res.data);
+                  setStatus("loaded");
+                } else {
+                  setStatus("error");
+                }
+              })
+              .catch(() => setStatus("error"));
+          }
+          return true;
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener(`open-history-${taskId}`, handleOpenEvent);
+    return () => {
+      window.removeEventListener(`open-history-${taskId}`, handleOpenEvent);
+    };
   }, [onOpen, status, taskId]);
 
   const fieldLabel = (fieldName: string): string =>
