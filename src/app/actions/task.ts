@@ -279,6 +279,36 @@ export async function getTaskEditHistoryAction(
   }
 }
 
+// ─── UNREAD NOTIFICATIONS ACTION (Task 13.3) ───────────────────────────────
+
+/**
+ * Fetch unread notifications (TaskEditLog entries) for the current user.
+ */
+export async function getUnreadNotificationsAction(): Promise<
+  ActionResult<
+    {
+      id: string;
+      taskId: string;
+      taskTitle: string;
+      editorName: string;
+      editedAt: Date;
+    }[]
+  >
+> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const unread = await TaskService.getUnreadNotifications(session.user.id);
+    return { success: true, data: unread };
+  } catch (err) {
+    console.error("[getUnreadNotificationsAction]", err);
+    return { success: false, error: "Failed to fetch notifications" };
+  }
+}
+
 /** Input for the createTask Server Action. */
 export interface CreateTaskActionInput {
   title: string;

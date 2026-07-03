@@ -121,6 +121,8 @@ export interface QueueTask extends TaskWithPriorityScore<{
   };
   /** Human-readable micro-prompt (Requirement 4.5). */
   microPrompt: string;
+  /** Count of unread changes for this task (Task 13.2). */
+  unreadLogsCount: number;
 }
 
 /** A single audit-trail entry for the Task Edit History timeline (Requirement 9.1, 9.4, 9.6). */
@@ -305,6 +307,32 @@ export class TaskService {
       },
     });
 
+    // Batch query unread TaskEditLog entries for all returned tasks to avoid N+1 queries (Task 13.2, Req 9.7)
+    const taskIds = rows.map((r) => r.taskId);
+    const unreadLogs =
+      taskIds.length > 0
+        ? await baseDb.taskEditLog.findMany({
+            where: {
+              taskId: { in: taskIds },
+              editorId: { not: userId },
+              readStates: {
+                none: {
+                  userId,
+                  isRead: true,
+                },
+              },
+            },
+            select: {
+              taskId: true,
+            },
+          })
+        : [];
+
+    const unreadCounts = new Map<string, number>();
+    for (const log of unreadLogs) {
+      unreadCounts.set(log.taskId, (unreadCounts.get(log.taskId) || 0) + 1);
+    }
+
     const nowMs = now.getTime();
 
     // Decorate each row with a JIT priority score. Tasks past their deadline
@@ -348,6 +376,7 @@ export class TaskService {
           completedAt: row.completedAt,
         },
         microPrompt: PriorityEngineService.generateMicroPrompt(t, now),
+        unreadLogsCount: unreadCounts.get(t.id) || 0,
       });
     }
 
@@ -371,6 +400,53 @@ export class TaskService {
     });
 
     return decorated;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  /**
+   * Fetch unread notifications (TaskEditLog entries) for a specific user (Task 13.3).
+   */
+  static async getUnreadNotifications(userId: string): Promise<
+    {
+      id: string;
+      taskId: string;
+      taskTitle: string;
+      editorName: string;
+      editedAt: Date;
+    }[]
+  > {
+    const userProgress = await baseDb.userTaskProgress.findMany({
+      where: { userId },
+      select: { taskId: true },
+    });
+    const taskIds = userProgress.map((p) => p.taskId);
+    if (taskIds.length === 0) return [];
+
+    const unreadLogs = await baseDb.taskEditLog.findMany({
+      where: {
+        taskId: { in: taskIds },
+        editorId: { not: userId },
+        readStates: {
+          none: {
+            userId,
+            isRead: true,
+          },
+        },
+      },
+      orderBy: { editedAt: "desc" },
+      include: {
+        task: { select: { title: true } },
+        editor: { select: { name: true } },
+      },
+    });
+
+    return unreadLogs.map((log) => ({
+      id: log.id,
+      taskId: log.taskId,
+      taskTitle: log.task.title,
+      editorName: log.editor.name ?? "Unknown",
+      editedAt: log.editedAt,
+    }));
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -402,6 +478,21 @@ export class TaskService {
       orderBy: { editedAt: "desc" },
       include: { editor: { select: { name: true } } },
     });
+
+    // Mark logs as read for current user (Task 13.2, Req 9.9)
+    if (logs.length > 0) {
+      const unreadLogs = logs.filter((log) => log.editorId !== userId);
+      if (unreadLogs.length > 0) {
+        await baseDb.taskEditLogRead.createMany({
+          data: unreadLogs.map((log) => ({
+            logId: log.id,
+            userId,
+            isRead: true,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
 
     return logs.map((log) => ({
       id: log.id,
