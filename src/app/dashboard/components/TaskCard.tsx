@@ -162,6 +162,7 @@ export interface TaskCardLabels {
   sharedFromClass: string;
   subtasksLabel: string;
   slaBreach: string;
+  updatesBadge: string;
   dragHandle?: string;
   locale: "EN" | "ID";
   microPromptTemplate?: string;
@@ -192,6 +193,7 @@ export function TaskCard({
   dragHandleLabel,
   onComplete,
 }: TaskCardProps): React.ReactNode {
+  const [unreadCount, setUnreadCount] = React.useState(task.unreadLogsCount);
   const isSlaBreach = task.timeUrgency >= 10000; // max urgency bucket
   const statusLabel = statusToLabel(task.progress.status, labels);
 
@@ -256,6 +258,19 @@ export function TaskCard({
                 title={labels.slaBreach}
               >
                 {labels.slaBreach}
+              </span>
+            ) : null}
+
+            {/* Ada Update badge (Requirement 9.7) */}
+            {unreadCount > 0 ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 animate-pulse dark:bg-emerald-950 dark:text-emerald-300"
+                title={`${unreadCount} update`}
+              >
+                <span>{labels.updatesBadge}</span>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-200 text-[9px] text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100 font-bold">
+                  {unreadCount}
+                </span>
               </span>
             ) : null}
           </div>
@@ -374,6 +389,7 @@ export function TaskCard({
         <TaskEditHistory
           taskId={task.task.id}
           labels={labels.editHistoryLabels}
+          onOpen={() => setUnreadCount(0)}
         />
       ) : null}
     </div>

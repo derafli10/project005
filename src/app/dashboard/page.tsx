@@ -63,6 +63,7 @@ export default async function DashboardPage() {
         sharedFromClass: t("task.card.sharedFromClass"),
         subtasksLabel: t("task.card.subtasks"),
         slaBreach: t("task.card.slaBreach"),
+        updatesBadge: t("task.card.updatesBadge"),
         emptyTitle: t("queue.empty.title"),
         emptyMessage: t("queue.empty.message"),
         emptyCta: t("queue.empty.cta"),

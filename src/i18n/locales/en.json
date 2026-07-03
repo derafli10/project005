@@ -259,5 +259,7 @@
   "error.validationFailed": "Please check your input",
   "toast.saved": "Saved",
   "toast.failed": "Action failed",
-  "toast.copied": "Copied to clipboard"
+  "toast.copied": "Copied to clipboard",
+  "notification.updated": "Task {title} was updated by {name}",
+  "notification.viewHistory": "View edit history"
 }
