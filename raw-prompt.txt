@@ -1,20 +1,41 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [12.2]
-Context/Notes: []
+Task Number: [13.2 & 13.3]
+
+TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
+13.2 Add "Ada Update" badge to Task cards
+    - Query unread TaskEditLog count per task for current user
+    - Display badge with count on Task card if unread changes exist
+    - Mark logs as read when user opens edit history timeline
+    - _Requirements: 9.7, 9.9_
+
+13.3 Implement in-app notification system
+    - Create notification toast component using Framer Motion
+    - Send notifications to all classroom members when task updated
+    - Display message: "Task [title] diupdate oleh [creator name]"
+    - Include link to view edit history
+    - _Requirements: 9.5_
+
+Context/Notes: [requirements.md 9.5, 9.7, 9.9]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
-1. READ THE BLUEPRINT: Before writing a single line of code, you must open, read, and parse `tasks.md` specifically for the Task Number indicated above. Look at its sub-bullets, dependencies, and requirements mapping.
-2. CROSS-REFERENCE SPECS: Locate and analyze `requirements.md` and `design.md` inside the workspace to understand the full domain logic, architectural constraints, and exact technical specifications required for this task. Do not make any assumptions about the implementation.
-3. INSPECT EXISTING CODES & SCHEMA: Check the current database state in `prisma/schema.prisma` and any existing service files related to this task. Ensure everything you write aligns perfectly with the current project structure and types.
-4. STRICT TYPE SAFETY: You must ensure absolute TypeScript type safety. If you are handling custom fields or third-party libraries (like Auth.js v5), perform proper module augmentation or type extensions as implicitly required by strict compiler configurations. Double-check your imports.
-5. WORKSPACE EXECUTION: Do not just write markdown code blocks for the user to copy-paste. You are an autonomous IDE agent; execute the file creations, modifications, and updates directly into the workspace files.
+
+1. USE PASTED TASK CONTENT: The task content above is already complete and current. Do NOT open or search `tasks.md` — treat the pasted content as the authoritative source for this task's scope, sub-bullets, and dependencies.
+
+2. SCOPED SPEC LOOKUP: In `requirements.md` and `design.md`, locate ONLY the section(s) whose headings/keywords match this task's domain (use the task's own sub-bullet terms as your search keywords first). Do not read either document in full unless the targeted section is insufficient to proceed — if so, expand scope one section at a time and state why.
+
+3. TARGETED SCHEMA & CODE INSPECTION: In `prisma/schema.prisma`, check only the model(s)/field(s) directly referenced by this task. For existing service files, only open files whose names or exports are explicitly mentioned in `tasks.md` for this task — do not scan the broader service directory speculatively.
+
+4. STRICT TYPE SAFETY: Ensure absolute TypeScript type safety. For custom fields or third-party libraries (e.g. Auth.js v5), apply proper module augmentation/type extensions as required by strict compiler config. Double-check imports.
+
+5. WORKSPACE EXECUTION: Execute file creation/modification directly in the workspace — do not output markdown code blocks for manual copy-paste.
 
 EXECUTION PIPELINE:
-- Step 1: Read and analyze `tasks.md`, `requirements.md`, and `design.md`.
-- Step 2: Formulate the exact implementation plan based purely on those documents.
-- Step 3: Directly modify or create the necessary files in the repository.
-- Step 4: Verify that there are no TypeScript compilation errors or diagnostics issues remaining.
+- Step 1: Parse the pasted TASK CONTENT above — no file read needed for this step.
+- Step 2: Targeted lookup in `requirements.md`/`design.md` (scoped to this task's domain, or use Context/Notes path if provided).
+- Step 3: Formulate implementation plan based on what was read.
+- Step 4: Modify/create files directly in the repository.
+- Step 5: Run type-check ONCE after all edits are complete — not after each individual file change. Fix any errors found, then re-run once more to confirm clean.
 
 Proceed with Step 1 immediately. No fluff, just execute the task accurately according to the specs.

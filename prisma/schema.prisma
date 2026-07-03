@@ -60,7 +60,7 @@ model User {
   passwordHash    String?
   role            UserRole @default(MEMBER)
   locale          Locale   @default(EN)
-  
+
   digestEnabled   Boolean  @default(false)
   digestTime      String?  // HH:MM format
   deliveryChannel DigestChannel @default(WHATSAPP)
@@ -81,6 +81,7 @@ model User {
   taskProgress     UserTaskProgress[]
   taskOverrides    TaskOverride[]
   taskEditLogs     TaskEditLog[]
+  taskEditLogReads TaskEditLogRead[]
   cookedScores     CookedScore[]
   digestLogs       DailyDigestLog[]
   academicWrapped  AcademicWrapped[]
@@ -169,7 +170,7 @@ model Task {
   subTasks      Task[]   @relation("SubTasks")
   classRoom     ClassRoom? @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
   creator       User     @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  
+
   userProgress  UserTaskProgress[]
   overrides     TaskOverride[]
   editLogs      TaskEditLog[]
@@ -222,8 +223,23 @@ model TaskEditLog {
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   editor User @relation(fields: [editorId], references: [id], onDelete: Cascade)
 
+  readStates TaskEditLogRead[]
+
   @@index([taskId])
   @@index([editorId])
+}
+
+model TaskEditLogRead {
+  logId    String
+  userId   String
+  isRead   Boolean  @default(false)
+
+  log      TaskEditLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([logId, userId])
+  @@index([logId])
+  @@index([userId])
 }
 
 model CookedScore {
