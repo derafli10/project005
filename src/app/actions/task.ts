@@ -23,10 +23,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/lib/errors/domain-errors";
-import {
-  OverrideSchema,
-  type ActionResult,
-} from "@/lib/validation/schemas";
+import { OverrideSchema, type ActionResult } from "@/lib/validation/schemas";
 import { createTranslator } from "@/i18n/utils";
 import { getLocale } from "@/i18n/server";
 import { revalidatePath } from "next/cache";
@@ -36,9 +33,7 @@ import { revalidatePath } from "next/cache";
 /** Minimal structural view of a Zod issue (version-agnostic). */
 type ZodIssueLike = { path: PropertyKey[]; message: string };
 
-function collectFieldErrors(
-  issues: ZodIssueLike[],
-): Record<string, string[]> {
+function collectFieldErrors(issues: ZodIssueLike[]): Record<string, string[]> {
   const errors: Record<string, string[]> = {};
   for (const issue of issues) {
     const key = issue.path[0];
@@ -163,9 +158,7 @@ export async function reorderQueueAction(
   if (
     !Array.isArray(input.orderedTaskIds) ||
     input.orderedTaskIds.length === 0 ||
-    input.orderedTaskIds.some(
-      (id) => typeof id !== "string" || id.length === 0,
-    )
+    input.orderedTaskIds.some((id) => typeof id !== "string" || id.length === 0)
   ) {
     return { success: false, error: t("error.validationFailed") };
   }
@@ -198,7 +191,9 @@ export async function reorderQueueAction(
  */
 export async function completeTaskAction(
   taskId: string,
-): Promise<ActionResult<import("@/lib/services/task.service").CompleteTaskResult>> {
+): Promise<
+  ActionResult<import("@/lib/services/task.service").CompleteTaskResult>
+> {
   const locale = await getLocale();
   const t = createTranslator(locale);
 
@@ -233,6 +228,57 @@ export async function completeTaskAction(
   }
 }
 
+// ─── TASK EDIT HISTORY ACTION (Task 13.1) ──────────────────────────────────
+
+/**
+ * Fetch the audit-trail timeline (TaskEditLog entries) for a Task.
+ *
+ * Access is gated to Users with a UserTaskProgress bridge row for the Task
+ * (delegated to `TaskService.getTaskEditHistory`), so any classroom member
+ * the Task was propagated to — not just the creator — can view it.
+ *
+ * Requirements: 9.4, 9.6
+ */
+export async function getTaskEditHistoryAction(
+  taskId: string,
+): Promise<
+  ActionResult<import("@/lib/services/task.service").TaskEditHistoryEntry[]>
+> {
+  const locale = await getLocale();
+  const t = createTranslator(locale);
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: t("error.unauthorized") };
+  }
+
+  if (typeof taskId !== "string" || taskId.length === 0) {
+    return { success: false, error: t("error.validationFailed") };
+  }
+
+  try {
+    const history = await TaskService.getTaskEditHistory(
+      taskId,
+      session.user.id,
+    );
+    return { success: true, data: history };
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      return { success: false, error: t("error.notFound") };
+    }
+    if (err instanceof AuthorizationError) {
+      return { success: false, error: t("error.forbidden") };
+    }
+    if (err instanceof ValidationError) {
+      return { success: false, error: err.message };
+    }
+    if (err instanceof DomainError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: t("error.generic") };
+  }
+}
+
 /** Input for the createTask Server Action. */
 export interface CreateTaskActionInput {
   title: string;
@@ -251,8 +297,10 @@ export interface CreateTaskActionInput {
  * Requirements: 8.6, 8.7, 8.8
  */
 export async function createTaskAction(
-  input: CreateTaskActionInput
-): Promise<ActionResult<{ id: string; title: string; classRoomId: string | null }>> {
+  input: CreateTaskActionInput,
+): Promise<
+  ActionResult<{ id: string; title: string; classRoomId: string | null }>
+> {
   const locale = await getLocale();
   const t = createTranslator(locale);
 
@@ -307,7 +355,8 @@ export async function createTaskAction(
       return {
         success: false,
         error: err.message,
-        fieldErrors: typeof field === "string" ? { [field]: [err.message] } : undefined,
+        fieldErrors:
+          typeof field === "string" ? { [field]: [err.message] } : undefined,
       };
     }
     if (err instanceof DomainError) {
@@ -316,4 +365,3 @@ export async function createTaskAction(
     return { success: false, error: t("error.generic") };
   }
 }
-

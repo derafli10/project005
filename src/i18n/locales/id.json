@@ -248,6 +248,7 @@
   "history.field.sksWeight": "Bobot SKS",
   "history.updatedBy": "Diupdate oleh {name}",
   "history.markedRead": "Ditandai sudah dibaca",
+  "history.empty": "Belum ada perubahan",
 
   "error.generic": "Terjadi kesalahan",
   "error.unauthorized": "Kamu harus login dulu",

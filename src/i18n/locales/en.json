@@ -248,6 +248,7 @@
   "history.field.sksWeight": "SKS Weight",
   "history.updatedBy": "Updated by {name}",
   "history.markedRead": "Marked as read",
+  "history.empty": "No changes yet",
 
   "error.generic": "Something went wrong",
   "error.unauthorized": "You must be logged in",

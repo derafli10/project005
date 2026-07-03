@@ -2,8 +2,12 @@
 
 import React from "react";
 import { GripVertical } from "lucide-react";
-import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
+import type {
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 import type { QueueTask } from "@/lib/services/task.service";
+import { TaskEditHistory, type TaskEditHistoryLabels } from "./TaskEditHistory";
 
 // ─── Status primitives ──────────────────────────────────────────────────────
 
@@ -40,7 +44,12 @@ export function StatusDot({
       : status === "IN_PROGRESS"
         ? "bg-sky-500"
         : "bg-zinc-300 dark:bg-zinc-600";
-  return <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${cls}`} aria-hidden="true" />;
+  return (
+    <span
+      className={`h-1.5 w-1.5 shrink-0 rounded-full ${cls}`}
+      aria-hidden="true"
+    />
+  );
 }
 
 export function statusToLabel(
@@ -85,7 +94,11 @@ interface SubTaskRowProps {
   onComplete?: (taskId: string) => void;
 }
 
-export function SubTaskRow({ task, labels, onComplete }: SubTaskRowProps): React.ReactNode {
+export function SubTaskRow({
+  task,
+  labels,
+  onComplete,
+}: SubTaskRowProps): React.ReactNode {
   const isSlaBreach = task.timeUrgency >= 10000;
   return (
     <li
@@ -106,7 +119,11 @@ export function SubTaskRow({ task, labels, onComplete }: SubTaskRowProps): React
             stroke="currentColor"
             strokeWidth="3"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         </button>
       ) : (
@@ -149,6 +166,8 @@ export interface TaskCardLabels {
   locale: "EN" | "ID";
   microPromptTemplate?: string;
   completeLabel?: string;
+  /** Labels for the collapsible Task Edit History timeline (Requirement 9.6). */
+  editHistoryLabels?: TaskEditHistoryLabels;
 }
 
 export interface TaskCardProps {
@@ -179,7 +198,8 @@ export function TaskCard({
   // Compute localized micro-prompt using the template if available
   const microPrompt = React.useMemo(() => {
     if (labels.microPromptTemplate) {
-      const hoursRemaining = (task.task.deadlineAt.getTime() - Date.now()) / (1000 * 60 * 60);
+      const hoursRemaining =
+        (task.task.deadlineAt.getTime() - Date.now()) / (1000 * 60 * 60);
       const daysRemaining = Math.max(0, Math.ceil(hoursRemaining / 24));
       const weightPercent = Math.round((task.task.taskWeight / 10000) * 100);
 
@@ -242,7 +262,9 @@ export function TaskCard({
 
           <h3
             className={`mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50 ${
-              task.progress.status === "COMPLETED" ? "line-through opacity-60" : ""
+              task.progress.status === "COMPLETED"
+                ? "line-through opacity-60"
+                : ""
             }`}
           >
             {task.task.title}
@@ -294,7 +316,11 @@ export function TaskCard({
                 stroke="currentColor"
                 strokeWidth="2.5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </button>
           )}
@@ -332,10 +358,23 @@ export function TaskCard({
           </p>
           <ul className="flex flex-col gap-2" role="list">
             {nested.map((sub) => (
-              <SubTaskRow key={sub.task.id} task={sub} labels={labels} onComplete={onComplete} />
+              <SubTaskRow
+                key={sub.task.id}
+                task={sub}
+                labels={labels}
+                onComplete={onComplete}
+              />
             ))}
           </ul>
         </div>
+      ) : null}
+
+      {/* Task Edit History timeline (Requirements 9.4, 9.5, 9.6). */}
+      {labels.editHistoryLabels ? (
+        <TaskEditHistory
+          taskId={task.task.id}
+          labels={labels.editHistoryLabels}
+        />
       ) : null}
     </div>
   );

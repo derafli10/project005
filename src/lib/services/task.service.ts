@@ -123,6 +123,17 @@ export interface QueueTask extends TaskWithPriorityScore<{
   microPrompt: string;
 }
 
+/** A single audit-trail entry for the Task Edit History timeline (Requirement 9.1, 9.4, 9.6). */
+export interface TaskEditHistoryEntry {
+  id: string;
+  fieldName: string;
+  oldValue: string;
+  newValue: string;
+  editedAt: Date;
+  editorId: string;
+  editorName: string;
+}
+
 /** Maps a cumulative score to a CookedTier (Requirement 6.3–6.6). */
 export function determineCookedTier(cumulativeScore: number): CookedTier {
   if (cumulativeScore <= 2000) return "MAIN_CHARACTER";
@@ -140,11 +151,17 @@ export class TaskService {
    */
   static async createTask(
     userId: string,
-    input: CreateTaskInput
+    input: CreateTaskInput,
   ): Promise<Task> {
     // 1. Validate inputs.
-    if (!input.title || input.title.trim().length === 0 || input.title.length > 255) {
-      throw new ValidationError("title must be 1–255 characters", { field: "title" });
+    if (
+      !input.title ||
+      input.title.trim().length === 0 ||
+      input.title.length > 255
+    ) {
+      throw new ValidationError("title must be 1–255 characters", {
+        field: "title",
+      });
     }
     if (
       !Number.isInteger(input.taskWeight) ||
@@ -156,13 +173,20 @@ export class TaskService {
       });
     }
     if (input.sksWeight !== undefined) {
-      if (!Number.isInteger(input.sksWeight) || input.sksWeight < 1 || input.sksWeight > 5) {
+      if (
+        !Number.isInteger(input.sksWeight) ||
+        input.sksWeight < 1 ||
+        input.sksWeight > 5
+      ) {
         throw new ValidationError("sksWeight must be an integer 1–5", {
           field: "sksWeight",
         });
       }
     }
-    if (!(input.deadlineAt instanceof Date) || Number.isNaN(input.deadlineAt.getTime())) {
+    if (
+      !(input.deadlineAt instanceof Date) ||
+      Number.isNaN(input.deadlineAt.getTime())
+    ) {
       throw new ValidationError("deadlineAt must be a valid Date", {
         field: "deadlineAt",
       });
@@ -200,7 +224,7 @@ export class TaskService {
         });
         if (!membership) {
           throw new AuthorizationError(
-            "User must be a member of the classroom to create a task in it"
+            "User must be a member of the classroom to create a task in it",
           );
         }
       }
@@ -268,7 +292,7 @@ export class TaskService {
   static async getUserTasks(
     userId: string,
     statuses: TaskStatus[] = ["PENDING", "IN_PROGRESS"],
-    now: Date = new Date()
+    now: Date = new Date(),
   ): Promise<QueueTask[]> {
     // Query through the bridge table (Requirement 4.7). Use baseDb with an
     // explicit userId filter — the JIT decoration is user-specific but the
@@ -288,15 +312,17 @@ export class TaskService {
     const decorated: QueueTask[] = [];
     for (const row of rows) {
       const t = row.task;
-      const hoursRemaining = (t.deadlineAt.getTime() - nowMs) / (1000 * 60 * 60);
-      const timeUrgency = PriorityEngineService.calculateTimeUrgency(hoursRemaining);
+      const hoursRemaining =
+        (t.deadlineAt.getTime() - nowMs) / (1000 * 60 * 60);
+      const timeUrgency =
+        PriorityEngineService.calculateTimeUrgency(hoursRemaining);
 
       const sksComponent = Math.floor(t.sksWeight * 2000 * 0.4);
       const taskComponent = Math.floor(t.taskWeight * 0.4);
       const timeComponent = Math.floor(timeUrgency * 0.2);
       const priorityScore = Math.min(
         10000,
-        Math.max(0, sksComponent + taskComponent + timeComponent)
+        Math.max(0, sksComponent + taskComponent + timeComponent),
       );
 
       decorated.push({
@@ -349,6 +375,47 @@ export class TaskService {
 
   // ───────────────────────────────────────────────────────────────────────
   /**
+   * Fetch the full audit-trail timeline for a Task, newest first.
+   *
+   * Access is restricted to Users who have a UserTaskProgress bridge row for
+   * the Task (i.e. classroom members the Task was propagated to, or the sole
+   * owner of a personal Task) — anyone who can see the Task in their queue
+   * can see its history (Requirement 9.6), not just the creator.
+   *
+   * Requirements: 9.4, 9.6
+   */
+  static async getTaskEditHistory(
+    taskId: string,
+    userId: string,
+  ): Promise<TaskEditHistoryEntry[]> {
+    const progress = await baseDb.userTaskProgress.findUnique({
+      where: { userId_taskId: { userId, taskId } },
+    });
+    if (!progress) {
+      throw new AuthorizationError(
+        "You don't have access to this task's history",
+      );
+    }
+
+    const logs = await baseDb.taskEditLog.findMany({
+      where: { taskId },
+      orderBy: { editedAt: "desc" },
+      include: { editor: { select: { name: true } } },
+    });
+
+    return logs.map((log) => ({
+      id: log.id,
+      fieldName: log.fieldName,
+      oldValue: log.oldValue,
+      newValue: log.newValue,
+      editedAt: log.editedAt,
+      editorId: log.editorId,
+      editorName: log.editor.name ?? "Unknown",
+    }));
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  /**
    * Update a shared task. Only the original creator may edit (Requirement 9.10).
    * Because the Task is the single source of truth (M:N architecture), a single
    * UPDATE applies to every member automatically — no row duplication.
@@ -358,7 +425,7 @@ export class TaskService {
   static async updateTask(
     taskId: string,
     userId: string,
-    updates: UpdateTaskInput
+    updates: UpdateTaskInput,
   ): Promise<Task> {
     await this.propagateTaskUpdates(taskId, updates, userId);
     return baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
@@ -373,7 +440,7 @@ export class TaskService {
   static async propagateTaskUpdates(
     sourceTaskId: string,
     updates: Partial<Task>,
-    editorId: string
+    editorId: string,
   ): Promise<number> {
     const task = await baseDb.task.findUnique({ where: { id: sourceTaskId } });
     if (!task) throw new NotFoundError("Task", sourceTaskId);
@@ -421,10 +488,12 @@ export class TaskService {
       const track = (
         fieldName: string,
         oldValue: string | number | Date | null,
-        newValue: string | number | Date | null
+        newValue: string | number | Date | null,
       ) => {
-        const oldStr = oldValue instanceof Date ? oldValue.toISOString() : String(oldValue);
-        const newStr = newValue instanceof Date ? newValue.toISOString() : String(newValue);
+        const oldStr =
+          oldValue instanceof Date ? oldValue.toISOString() : String(oldValue);
+        const newStr =
+          newValue instanceof Date ? newValue.toISOString() : String(newValue);
         if (oldStr !== newStr) {
           editLogs.push({
             taskId: sourceTaskId,
@@ -485,7 +554,7 @@ export class TaskService {
 
         for (const member of members) {
           console.log(
-            `[Notification] User ${member.userId} notified: "Task ${task.title} diupdate oleh ${creatorName}"`
+            `[Notification] User ${member.userId} notified: "Task ${task.title} diupdate oleh ${creatorName}"`,
           );
         }
       }
@@ -505,7 +574,7 @@ export class TaskService {
    */
   static async completeTask(
     taskId: string,
-    userId: string
+    userId: string,
   ): Promise<CompleteTaskResult> {
     // Idempotency: if already completed, short-circuit with no celebration.
     const existing = await baseDb.userTaskProgress.findUnique({
@@ -515,12 +584,14 @@ export class TaskService {
       throw new NotFoundError("UserTaskProgress", `${userId}/${taskId}`);
     }
     if (existing.status === "COMPLETED") {
-      const completedTask = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
+      const completedTask = await baseDb.task.findUniqueOrThrow({
+        where: { id: taskId },
+      });
       // Compute current tiers for a stable return shape.
       const idempotentQueue = await this.getUserTasks(
         userId,
         ["PENDING", "IN_PROGRESS"],
-        new Date()
+        new Date(),
       );
       const currentScore = this.sumParentScores(idempotentQueue);
       const currentTier = determineCookedTier(currentScore);
@@ -538,7 +609,7 @@ export class TaskService {
     const beforeQueue = await this.getUserTasks(
       userId,
       ["PENDING", "IN_PROGRESS"],
-      new Date()
+      new Date(),
     );
     const beforeScore = this.sumParentScores(beforeQueue);
     const oldTier = determineCookedTier(beforeScore);
@@ -555,14 +626,17 @@ export class TaskService {
     // Auto-complete parent if all subtasks are done (Requirement 7.9).
     if (task.isSubTask && task.parentTaskId) {
       const { RecoveryModeService } = await import("./recovery-mode.service");
-      await RecoveryModeService.checkParentCompletion(task.parentTaskId, userId);
+      await RecoveryModeService.checkParentCompletion(
+        task.parentTaskId,
+        userId,
+      );
     }
 
     // Snapshot the cumulative stress score AFTER completion (Requirement 12.5).
     const afterQueue = await this.getUserTasks(
       userId,
       ["PENDING", "IN_PROGRESS"],
-      now
+      now,
     );
     const afterScore = this.sumParentScores(afterQueue);
     const newTier = determineCookedTier(afterScore);
@@ -583,7 +657,14 @@ export class TaskService {
         }
       : null;
 
-    return { task, triggerCelebration, stressDrop, oldTier, newTier, celebrationContext };
+    return {
+      task,
+      triggerCelebration,
+      stressDrop,
+      oldTier,
+      newTier,
+      celebrationContext,
+    };
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -597,7 +678,7 @@ export class TaskService {
     userId: string,
     oldPosition: number,
     newPosition: number,
-    reason: string
+    reason: string,
   ): Promise<void> {
     if (!reason || reason.trim().length < 3 || reason.length > 500) {
       throw new ValidationError("reason must be 3–500 characters");
@@ -663,14 +744,16 @@ export class TaskService {
    */
   static async reorderQueue(
     userId: string,
-    orderedTaskIds: string[]
+    orderedTaskIds: string[],
   ): Promise<void> {
     if (
       !Array.isArray(orderedTaskIds) ||
       orderedTaskIds.length === 0 ||
       orderedTaskIds.some((id) => typeof id !== "string" || id.length === 0)
     ) {
-      throw new ValidationError("orderedTaskIds must be a non-empty array of task ids");
+      throw new ValidationError(
+        "orderedTaskIds must be a non-empty array of task ids",
+      );
     }
 
     // Guard against duplicates — a permutation has no repeats.

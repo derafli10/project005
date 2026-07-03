@@ -81,6 +81,22 @@ export default async function DashboardPage() {
         submit: t("override.modal.submit"),
         cancel: t("common.cancel"),
         createTask: t("task.create"),
+        editHistoryLabels: {
+          viewHistory: t("task.card.viewHistory"),
+          title: t("history.title"),
+          fieldLabels: {
+            deadlineAt: t("history.field.deadlineAt"),
+            taskWeight: t("history.field.taskWeight"),
+            title: t("history.field.title"),
+            description: t("history.field.description"),
+            sksWeight: t("history.field.sksWeight"),
+          },
+          updatedByTemplate: t("history.updatedBy"),
+          loading: t("common.loading"),
+          empty: t("history.empty"),
+          errorGeneric: t("error.generic"),
+          locale,
+        },
         createTaskFormLabels: {
           title: t("task.create.title"),
           titleLabel: t("task.create.titleLabel"),
