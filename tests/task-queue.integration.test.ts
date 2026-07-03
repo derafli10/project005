@@ -582,7 +582,7 @@ describe("Task 10.7.4 — Task completion with Cooked Meter update (Requirements
     const scoreAfter = await CookedMeterService.calculateCumulativeScore(userId, NOW);
     expect(scoreAfter).toBeLessThan(scoreBefore);
     // The remaining heavy task is still parent-tracked.
-    const activeQueue = await TaskService.getUserTasks(userId);
+    const activeQueue = await TaskService.getUserTasks(userId, ["PENDING", "IN_PROGRESS"], NOW);
     expect(activeQueue.find((q) => q.task.id === keep)).toBeDefined();
     expect(activeQueue.find((q) => q.task.id === complete)).toBeUndefined();
   });
@@ -605,7 +605,7 @@ describe("Task 10.7.4 — Task completion with Cooked Meter update (Requirements
 
     // The score must equal ONLY the parent's JIT priority score — the 9000-weight
     // subtask must NOT contribute (Requirement 7.8, anti-inflation).
-    const queue: QueueTask[] = await TaskService.getUserTasks(userId);
+    const queue: QueueTask[] = await TaskService.getUserTasks(userId, ["PENDING", "IN_PROGRESS"], NOW);
     const parentOnly = queue.find((q) => q.task.id === parent);
     expect(parentOnly).toBeDefined();
     const expected = parentOnly!.priorityScore;

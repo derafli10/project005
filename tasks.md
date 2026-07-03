@@ -470,7 +470,7 @@ This implementation plan translates the design and requirements documents into a
     - Link to classroom feed
     - _Requirements: 8.6_
   
-  - [ ] 12.6 Implement task creation with classroom propagation
+  - [x] 12.6 Implement task creation with classroom propagation
     - Extend task creation form with optional classRoomId field
     - When classRoomId selected, call TaskService.createTask with classRoomId
     - System automatically creates UserTaskProgress records for all classroom members
