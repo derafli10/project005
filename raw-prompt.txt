@@ -1,23 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [13.2 & 13.3]
+Task Number: [12.7]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-13.2 Add "Ada Update" badge to Task cards
-    - Query unread TaskEditLog count per task for current user
-    - Display badge with count on Task card if unread changes exist
-    - Mark logs as read when user opens edit history timeline
-    - _Requirements: 9.7, 9.9_
+12.7 Write integration tests for ClassRoom features
+    - Test complete flow: create classroom → join classroom → create shared task
+    - Test class code uniqueness validation
+    - Test UserTaskProgress propagation to all members
+    - Test leave classroom deletes only UserTaskProgress, not Task
+    - _Requirements: 8.1, 8.2, 8.7, 8.8, 8.10_
 
-13.3 Implement in-app notification system
-    - Create notification toast component using Framer Motion
-    - Send notifications to all classroom members when task updated
-    - Display message: "Task [title] diupdate oleh [creator name]"
-    - Include link to view edit history
-    - _Requirements: 9.5_
-
-Context/Notes: [requirements.md 9.5, 9.7, 9.9]
+Context/Notes: [requirements.md 8.1, 8.2, 8.7, 8.8, 8.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
