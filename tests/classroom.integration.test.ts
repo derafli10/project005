@@ -195,6 +195,9 @@ describe("ClassRoom Features Integration Tests", () => {
       deadlineAt,
       classRoomId,
     });
+    if (!taskRes.success) {
+      console.error("taskRes failed with error:", taskRes.error, taskRes.fieldErrors);
+    }
     expect(taskRes.success).toBe(true);
     const taskId = taskRes.data?.id;
 
@@ -210,26 +213,30 @@ describe("ClassRoom Features Integration Tests", () => {
     // Setup mock class code generator to return the same code first
     const generatedCodes = ["COLLIDE8", "COLLIDE8", "UNIQUE99"];
     let genIndex = 0;
-    vi.spyOn(ClassRoomService, "generateClassCode").mockImplementation(() => {
+    const spy = vi.spyOn(ClassRoomService, "generateClassCode").mockImplementation(() => {
       return generatedCodes[genIndex++];
     });
 
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
 
-    // Create first classroom with COLLIDE8
-    const res1 = await createClassRoomAction("First Class", 3);
-    expect(res1.success).toBe(true);
-    expect(res1.data?.classCode).toBe("COLLIDE8");
+    try {
+      // Create first classroom with COLLIDE8
+      const res1 = await createClassRoomAction("First Class", 3);
+      expect(res1.success).toBe(true);
+      expect(res1.data?.classCode).toBe("COLLIDE8");
 
-    // Second classroom should trigger a collision on COLLIDE8, retry, and successfully generate UNIQUE99 (Requirement 8.2)
-    const res2 = await createClassRoomAction("Second Class", 4);
-    expect(res2.success).toBe(true);
-    expect(res2.data?.classCode).toBe("UNIQUE99");
+      // Second classroom should trigger a collision on COLLIDE8, retry, and successfully generate UNIQUE99 (Requirement 8.2)
+      const res2 = await createClassRoomAction("Second Class", 4);
+      expect(res2.success).toBe(true);
+      expect(res2.data?.classCode).toBe("UNIQUE99");
 
-    // Verify both exist
-    const store = getInMemoryStore();
-    expect(store.classRooms.has(res1.data!.id)).toBe(true);
-    expect(store.classRooms.has(res2.data!.id)).toBe(true);
+      // Verify both exist
+      const store = getInMemoryStore();
+      expect(store.classRooms.has(res1.data!.id)).toBe(true);
+      expect(store.classRooms.has(res2.data!.id)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("propagates tasks to joining members when they join a classroom with existing tasks", async () => {

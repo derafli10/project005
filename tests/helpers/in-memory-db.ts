@@ -589,7 +589,7 @@ export function buildInMemoryClient() {
 
       async create(args: { data: Record<string, unknown> }) {
         const s = getInMemoryStore();
-        const id = args.data.id ? String(args.data.id) : `class_${Math.random().toString(36).substring(2, 11)}`;
+        const id = args.data.id ? String(args.data.id) : `cl${Math.random().toString(36).substring(2, 11).padEnd(22, "0")}`;
         const classRoom = {
           id,
           className: String(args.data.className),
