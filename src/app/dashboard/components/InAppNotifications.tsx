@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, ExternalLink, X } from "lucide-react";
 import { getUnreadNotificationsAction } from "@/app/actions/task";
+
+/** Auto-dismiss delay in milliseconds. */
+const AUTO_DISMISS_MS = 8_000;
+/** Max shown-notification IDs to persist in localStorage. */
+const MAX_STORED_IDS = 200;
 
 interface ActiveToast {
   id: string;
@@ -21,6 +26,25 @@ export function InAppNotifications({
   viewHistoryLabel,
 }: InAppNotificationsProps): React.ReactNode {
   const [toasts, setToasts] = useState<ActiveToast[]>([]);
+  const dismissTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Schedule auto-dismiss for a toast.
+  const scheduleDismiss = useCallback((id: string) => {
+    const timer = setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      dismissTimers.current.delete(id);
+    }, AUTO_DISMISS_MS);
+    dismissTimers.current.set(id, timer);
+  }, []);
+
+  // Cleanup all auto-dismiss timers on unmount.
+  useEffect(() => {
+    const timers = dismissTimers.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+    };
+  }, []);
 
   useEffect(() => {
     // Safe initialization on mount to avoid SSR hydration mismatches
@@ -59,15 +83,21 @@ export function InAppNotifications({
           }
 
           if (newToasts.length > 0) {
+            // Cap stored IDs to prevent unbounded localStorage growth.
+            const capped = updatedShown.slice(-MAX_STORED_IDS);
             try {
               localStorage.setItem(
                 "project005_shown_notifications",
-                JSON.stringify(updatedShown),
+                JSON.stringify(capped),
               );
             } catch {
               // Ignore storage errors
             }
             setToasts((prev) => [...prev, ...newToasts]);
+            // Schedule auto-dismiss for each new toast.
+            for (const toast of newToasts) {
+              scheduleDismiss(toast.id);
+            }
           }
         }
       } catch (err) {
@@ -79,11 +109,17 @@ export function InAppNotifications({
     const interval = setInterval(poll, 10000); // Poll every 10 seconds
 
     return () => clearInterval(interval);
-  }, [notificationUpdatedTemplate]);
+  }, [notificationUpdatedTemplate, scheduleDismiss]);
 
-  const handleDismiss = (id: string) => {
+  const handleDismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+    // Clear any pending auto-dismiss timer for this toast.
+    const timer = dismissTimers.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      dismissTimers.current.delete(id);
+    }
+  }, []);
 
   const handleToastClick = (taskId: string, toastId: string) => {
     // Dismiss the clicked toast
@@ -141,7 +177,7 @@ export function InAppNotifications({
                   <span>{viewHistoryLabel}</span>
                   <ExternalLink className="h-3 w-3" />
                 </button>
-              </div>
+            </div>
 
               <button
                 type="button"
@@ -151,6 +187,16 @@ export function InAppNotifications({
               >
                 <X className="h-3.5 w-3.5" />
               </button>
+            </div>
+
+            {/* Auto-dismiss countdown bar */}
+            <div className="mt-3 h-0.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <motion.div
+                className="h-full bg-emerald-500 dark:bg-emerald-400"
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                transition={{ duration: AUTO_DISMISS_MS / 1000, ease: "linear" }}
+              />
             </div>
           </motion.div>
         ))}

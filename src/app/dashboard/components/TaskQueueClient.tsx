@@ -460,6 +460,7 @@ function SortableTaskCard({
 
   return (
     <motion.li
+      id={`task-card-${task.task.id}`}
       ref={setNodeRef}
       style={style}
       layout
