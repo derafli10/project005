@@ -494,13 +494,13 @@ This implementation plan translates the design and requirements documents into a
     - Show editor name and field changed
     - _Requirements: 9.4, 9.5, 9.6_
   
-  - [ ] 13.2 Add "Ada Update" badge to Task cards
+  - [x] 13.2 Add "Ada Update" badge to Task cards
     - Query unread TaskEditLog count per task for current user
     - Display badge with count on Task card if unread changes exist
     - Mark logs as read when user opens edit history timeline
     - _Requirements: 9.7, 9.9_
   
-  - [ ] 13.3 Implement in-app notification system
+  - [x] 13.3 Implement in-app notification system
     - Create notification toast component using Framer Motion
     - Send notifications to all classroom members when task updated
     - Display message: "Task [title] diupdate oleh [creator name]"
