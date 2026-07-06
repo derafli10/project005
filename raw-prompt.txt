@@ -1,17 +1,26 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [12.7]
+Task Number: [15.2 & 15.3]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-12.7 Write integration tests for ClassRoom features
-    - Test complete flow: create classroom → join classroom → create shared task
-    - Test class code uniqueness validation
-    - Test UserTaskProgress propagation to all members
-    - Test leave classroom deletes only UserTaskProgress, not Task
-    - _Requirements: 8.1, 8.2, 8.7, 8.8, 8.10_
+  - 15.2 Create Anonymous Post form (Client Component)
+    - Create `src/app/classrooms/[id]/feed/components/CreatePostForm.tsx`
+    - Input textarea with 500 character limit
+    - Mandatory PostTag dropdown: #Cur  hatTugas, #ButuhTemanTim, #TanyaJawaban, #DiskusiUmum
+    - Display character count
+    - Call Server Action to create post
+    - _Requirements: 10.3, 10.4, 10.10_
+  
+  - 15.3 Create Feed Post card component
+    - Create `src/app/classrooms/[id]/feed/components/FeedPost.tsx`
+    - Display anonymous avatar placeholder (no user info)
+    - Display content (max 500 chars)
+    - Display colored PostTag badge: #CurhatTugas=red, #ButuhTemanTim=blue, #TanyaJawaban=green, #DiskusiUmum=gray
+    - Display relative timestamp
+    - _Requirements: 10.2, 10.8_
 
-Context/Notes: [requirements.md 8.1, 8.2, 8.7, 8.8, 8.10]
+Context/Notes: [requirements.md 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
