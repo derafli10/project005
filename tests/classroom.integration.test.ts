@@ -78,12 +78,12 @@ function bind(stub: Record<string, unknown>, real: Record<string, unknown>) {
 function hydrateMock() {
   client = buildInMemoryClient();
   vi.clearAllMocks();
-  
+
   // Explicitly map all operations so Prisma bindings work seamlessly
   mockDb.user.findUnique.mockImplementation(client.user.findUnique.bind(client.user));
   mockDb.user.create.mockImplementation(client.user.create.bind(client.user));
   mockDb.user.update.mockImplementation(client.user.update.bind(client.user));
-  
+
   mockDb.task.findUnique.mockImplementation(client.task.findUnique.bind(client.task));
   mockDb.task.findUniqueOrThrow.mockImplementation(client.task.findUniqueOrThrow.bind(client.task));
   mockDb.task.findMany.mockImplementation(client.task.findMany.bind(client.task));
@@ -170,8 +170,9 @@ describe("ClassRoom Features Integration Tests", () => {
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
     const createRes = await createClassRoomAction("Computer Science 101", 4);
     expect(createRes.success).toBe(true);
-    const classCode = createRes.data?.classCode;
-    const classRoomId = createRes.data?.id;
+    if (!createRes.success) throw new Error(createRes.error);
+    const classCode = createRes.data.classCode;
+    const classRoomId = createRes.data.id;
     expect(classCode).toHaveLength(8);
     expect(classRoomId).toBeDefined();
 
@@ -181,7 +182,7 @@ describe("ClassRoom Features Integration Tests", () => {
 
     // 2. Authenticate as member and join classroom (Requirement 8.4, 8.5)
     mockAuthFn.mockResolvedValue({ user: { id: memberId } });
-    const joinRes = await joinClassRoomAction(classCode!);
+    const joinRes = await joinClassRoomAction(classCode);
     expect(joinRes.success).toBe(true);
     expect(store.classRoomMembers.has(`${classRoomId}/${memberId}`)).toBe(true);
 
@@ -199,7 +200,8 @@ describe("ClassRoom Features Integration Tests", () => {
       console.error("taskRes failed with error:", taskRes.error, taskRes.fieldErrors);
     }
     expect(taskRes.success).toBe(true);
-    const taskId = taskRes.data?.id;
+    if (!taskRes.success) throw new Error(taskRes.error);
+    const taskId = taskRes.data.id;
 
     // Verify UserTaskProgress is propagated to both classroom members (Requirement 8.7)
     expect(store.userTaskProgress.has(`${creatorId}/${taskId}`)).toBe(true);
@@ -214,7 +216,7 @@ describe("ClassRoom Features Integration Tests", () => {
     const generatedCodes = ["COLLIDE8", "COLLIDE8", "UNIQUE99"];
     let genIndex = 0;
     const spy = vi.spyOn(ClassRoomService, "generateClassCode").mockImplementation(() => {
-      return generatedCodes[genIndex++];
+      return generatedCodes[genIndex++]!;
     });
 
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
@@ -223,17 +225,19 @@ describe("ClassRoom Features Integration Tests", () => {
       // Create first classroom with COLLIDE8
       const res1 = await createClassRoomAction("First Class", 3);
       expect(res1.success).toBe(true);
-      expect(res1.data?.classCode).toBe("COLLIDE8");
+      if (!res1.success) throw new Error(res1.error);
+      expect(res1.data.classCode).toBe("COLLIDE8");
 
       // Second classroom should trigger a collision on COLLIDE8, retry, and successfully generate UNIQUE99 (Requirement 8.2)
       const res2 = await createClassRoomAction("Second Class", 4);
       expect(res2.success).toBe(true);
-      expect(res2.data?.classCode).toBe("UNIQUE99");
+      if (!res2.success) throw new Error(res2.error);
+      expect(res2.data.classCode).toBe("UNIQUE99");
 
       // Verify both exist
       const store = getInMemoryStore();
-      expect(store.classRooms.has(res1.data!.id)).toBe(true);
-      expect(store.classRooms.has(res2.data!.id)).toBe(true);
+      expect(store.classRooms.has(res1.data.id)).toBe(true);
+      expect(store.classRooms.has(res2.data.id)).toBe(true);
     } finally {
       spy.mockRestore();
     }
@@ -249,8 +253,9 @@ describe("ClassRoom Features Integration Tests", () => {
     // Create classroom as creator
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
     const createRes = await createClassRoomAction("Data Science 101", 3);
-    const classRoomId = createRes.data?.id;
-    const classCode = createRes.data?.classCode;
+    if (!createRes.success) throw new Error(createRes.error);
+    const classRoomId = createRes.data.id;
+    const classCode = createRes.data.classCode;
 
     // Create a shared task when only creator is in the class
     const deadlineAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString();
@@ -261,7 +266,8 @@ describe("ClassRoom Features Integration Tests", () => {
       deadlineAt,
       classRoomId,
     });
-    const taskId = taskRes.data?.id;
+    if (!taskRes.success) throw new Error(taskRes.error);
+    const taskId = taskRes.data.id;
 
     const store = getInMemoryStore();
     expect(store.userTaskProgress.has(`${creatorId}/${taskId}`)).toBe(true);
@@ -269,7 +275,7 @@ describe("ClassRoom Features Integration Tests", () => {
 
     // Member joins classroom
     mockAuthFn.mockResolvedValue({ user: { id: memberId } });
-    const joinRes = await joinClassRoomAction(classCode!);
+    const joinRes = await joinClassRoomAction(classCode);
     expect(joinRes.success).toBe(true);
 
     // Verify existing task was propagated to the new member upon joining (Requirement 8.7)
@@ -286,11 +292,12 @@ describe("ClassRoom Features Integration Tests", () => {
     // Setup classroom and task
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
     const createRes = await createClassRoomAction("Calculus 101", 4);
-    const classRoomId = createRes.data?.id;
-    const classCode = createRes.data?.classCode;
+    if (!createRes.success) throw new Error(createRes.error);
+    const classRoomId = createRes.data.id;
+    const classCode = createRes.data.classCode;
 
     mockAuthFn.mockResolvedValue({ user: { id: memberId } });
-    await joinClassRoomAction(classCode!);
+    await joinClassRoomAction(classCode);
 
     mockAuthFn.mockResolvedValue({ user: { id: creatorId } });
     const deadlineAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString();
@@ -300,7 +307,8 @@ describe("ClassRoom Features Integration Tests", () => {
       deadlineAt,
       classRoomId,
     });
-    const taskId = taskRes.data?.id;
+    if (!taskRes.success) throw new Error(taskRes.error);
+    const taskId = taskRes.data.id;
 
     const store = getInMemoryStore();
     expect(store.classRoomMembers.has(`${classRoomId}/${memberId}`)).toBe(true);
@@ -308,7 +316,7 @@ describe("ClassRoom Features Integration Tests", () => {
 
     // Member leaves classroom (Requirement 8.10)
     mockAuthFn.mockResolvedValue({ user: { id: memberId } });
-    const leaveRes = await leaveClassRoomAction(classRoomId!);
+    const leaveRes = await leaveClassRoomAction(classRoomId);
     expect(leaveRes.success).toBe(true);
 
     // Assert membership and progress are deleted for this user
@@ -316,7 +324,7 @@ describe("ClassRoom Features Integration Tests", () => {
     expect(store.userTaskProgress.has(`${memberId}/${taskId}`)).toBe(false);
 
     // Assert global Task and creator's progress are preserved
-    expect(store.tasks.has(taskId!)).toBe(true);
+    expect(store.tasks.has(taskId)).toBe(true);
     expect(store.userTaskProgress.has(`${creatorId}/${taskId}`)).toBe(true);
   });
 });
