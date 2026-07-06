@@ -477,7 +477,7 @@ This implementation plan translates the design and requirements documents into a
     - Display "Task shared to class" confirmation
     - _Requirements: 8.6, 8.7, 8.8_
   
-  - [ ]* 12.7 Write integration tests for ClassRoom features
+  - [x]* 12.7 Write integration tests for ClassRoom features
     - Test complete flow: create classroom → join classroom → create shared task
     - Test class code uniqueness validation
     - Test UserTaskProgress propagation to all members
