@@ -101,3 +101,10 @@ export async function createFeedPostAction(
     };
   }
 }
+
+/**
+ * Alias for {@link createFeedPostAction}.
+ * Task 15.4 spec name. Encryption is handled internally by
+ * FeedService.createAnonymousPost → FeedService.encryptAuthorId.
+ */
+export const createAnonymousPostAction = createFeedPostAction;
