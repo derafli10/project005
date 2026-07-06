@@ -528,7 +528,7 @@ This implementation plan translates the design and requirements documents into a
     - Add "Create Post" button
     - _Requirements: 10.1, 10.9_
   
-  - [ ] 15.2 Create Anonymous Post form (Client Component)
+  - [x] 15.2 Create Anonymous Post form (Client Component)
     - Create `src/app/classrooms/[id]/feed/components/CreatePostForm.tsx`
     - Input textarea with 500 character limit
     - Mandatory PostTag dropdown: #CurhatTugas, #ButuhTemanTim, #TanyaJawaban, #DiskusiUmum
@@ -536,7 +536,7 @@ This implementation plan translates the design and requirements documents into a
     - Call Server Action to create post
     - _Requirements: 10.3, 10.4, 10.10_
   
-  - [ ] 15.3 Create Feed Post card component
+  - [x] 15.3 Create Feed Post card component
     - Create `src/app/classrooms/[id]/feed/components/FeedPost.tsx`
     - Display anonymous avatar placeholder (no user info)
     - Display content (max 500 chars)
