@@ -520,7 +520,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 15. Build Anonymous ClassRoom Feed
-  - [ ] 15.1 Create Feed page (Server Component)
+  - [x] 15.1 Create Feed page (Server Component)
     - Create `src/app/classrooms/[id]/feed/page.tsx`
     - Fetch posts server-side via FeedService.getFeedPosts
     - Display posts in reverse chronological order
@@ -544,7 +544,7 @@ This implementation plan translates the design and requirements documents into a
     - Display relative timestamp
     - _Requirements: 10.2, 10.8_
   
-  - [ ] 15.4 Implement Feed Server Actions with encryption
+  - [x] 15.4 Implement Feed Server Actions with encryption
     - Create `src/app/actions/feed.ts`
     - Implement `createAnonymousPostAction` calling FeedService.createAnonymousPost
     - Validate mandatory PostTag presence (reject if missing)
