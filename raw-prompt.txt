@@ -1,26 +1,24 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [15.1 & 15.4]
+Task Number: [16.2 & 16.3]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 15.1 Create Feed page (Server Component)
-    - Create `src/app/classrooms/[id]/feed/page.tsx`
-    - Fetch posts server-side via FeedService.getFeedPosts
-    - Display posts in reverse chronological order
-    - Show tag filter buttons for each PostTag category
-    - Add "Create Post" button
-    - _Requirements: 10.1, 10.9_
+  - 16.2 Integrate celebration trigger in task completion flow
+    - Extend completeTaskAction to check if task in OVERCOOKED tier
+    - Calculate stress drop from before/after cumulative scores
+    - Return triggerCelebration flag and stressDrop value
+    - Open AcademicComebackModal with oldTier, newTier, stressDrop props
+    - Update Cooked Meter with animated transition after modal close
+    - _Requirements: 12.1, 12.5, 12.10_
   
-  - 15.4 Implement Feed Server Actions with encryption
-    - Create `src/app/actions/feed.ts`
-    - Implement `createAnonymousPostAction` calling FeedService.createAnonymousPost
-    - Validate mandatory PostTag presence (reject if missing)
-    - Encrypt authorId before database save using crypto.publicEncrypt
-    - Return success or validation error
-    - _Requirements: 10.1, 10.4, 10.5, 10.6_
+  - 16.3 Add social share integration to celebration modal
+    - Implement "Share My Comeback" button click handler
+    - Generate temporary Academic Wrapped card snapshot with celebration context
+    - Trigger Web Share API (mobile) or download button (desktop)
+    - _Requirements: 12.9_
 
-Context/Notes: [requirements.md 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 10.10]
+Context/Notes: [requirements.md 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

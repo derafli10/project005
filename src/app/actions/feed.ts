@@ -108,3 +108,37 @@ export async function createFeedPostAction(
  * FeedService.createAnonymousPost → FeedService.encryptAuthorId.
  */
 export const createAnonymousPostAction = createFeedPostAction;
+
+/**
+ * Server Action to fetch classroom feed posts, optionally filtered by tag.
+ * Requirements 10.1, 10.9
+ */
+export async function getFeedPostsAction(
+  classRoomId: string,
+  tag?: PostTag
+): Promise<ActionResult<any[]>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Unauthorized" };
+  }
+  const userId = session.user.id;
+
+  try {
+    const posts = await FeedService.getFeedPosts(userId, classRoomId, tag);
+    return {
+      success: true,
+      data: posts.map((post) => ({
+        id: post.id,
+        content: post.content,
+        tag: post.tag,
+        createdAt: post.createdAt,
+      })),
+    };
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "An unexpected error occurred." };
+  }
+}
+

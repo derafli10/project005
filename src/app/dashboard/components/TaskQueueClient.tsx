@@ -296,12 +296,12 @@ export function TaskQueueClient({
         return;
       }
 
-      window.dispatchEvent(new CustomEvent("task-updated"));
-
-      // If Academic Comeback is triggered (celebration context exists), show the modal
+      // If Academic Comeback is triggered (celebration context exists), show the modal and defer updating Cooked Meter.
       if (result.data?.triggerCelebration && result.data.celebrationContext) {
         setCelebrationContext(result.data.celebrationContext);
         setIsComebackModalOpen(true);
+      } else {
+        window.dispatchEvent(new CustomEvent("task-updated"));
       }
     },
     [tasks, labels.reorderFailed],
@@ -405,7 +405,10 @@ export function TaskQueueClient({
       {/* Academic Comeback celebration modal (Requirement 12.6) */}
       <AcademicComebackModal
         isOpen={isComebackModalOpen}
-        onClose={() => setIsComebackModalOpen(false)}
+        onClose={() => {
+          setIsComebackModalOpen(false);
+          window.dispatchEvent(new CustomEvent("task-updated"));
+        }}
         context={celebrationContext}
       />
 

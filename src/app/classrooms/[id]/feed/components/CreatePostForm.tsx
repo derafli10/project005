@@ -45,9 +45,10 @@ const MAX_CHARS = 500;
 
 interface CreatePostFormProps {
   classRoomId: string;
+  onPostCreated?: () => void;
 }
 
-export function CreatePostForm({ classRoomId }: CreatePostFormProps) {
+export function CreatePostForm({ classRoomId, onPostCreated }: CreatePostFormProps) {
   const [content, setContent] = useState("");
   const [selectedTag, setSelectedTag] = useState<PostTag | "">("");
   const [loading, setLoading] = useState(false);
@@ -117,6 +118,9 @@ export function CreatePostForm({ classRoomId }: CreatePostFormProps) {
     if (result.success) {
       setContent("");
       setSelectedTag("");
+      if (onPostCreated) {
+        onPostCreated();
+      }
     } else {
       setError(result.error);
       if (result.fieldErrors) {
