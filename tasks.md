@@ -507,7 +507,7 @@ This implementation plan translates the design and requirements documents into a
     - Include link to view edit history
     - _Requirements: 9.5_
   
-  - [ ]* 13.4 Write integration tests for edit history
+  - [x]* 13.4 Write integration tests for edit history
     - Test TaskEditLog creation on task field changes
     - Test audit trail display with oldValue/newValue
     - Test unread badge count
@@ -515,7 +515,7 @@ This implementation plan translates the design and requirements documents into a
     - _Requirements: 9.1, 9.2, 9.6, 9.7, 9.9_
 
 
-- [ ] 14. Checkpoint - Dashboard and ClassRoom features complete
+- [x] 14. Checkpoint - Dashboard and ClassRoom features complete
   - Ensure all tests pass, ask the user if questions arise.
 
 
