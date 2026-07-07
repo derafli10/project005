@@ -69,6 +69,12 @@ export interface InMemoryTaskEditLog {
   editedAt: Date;
 }
 
+export interface InMemoryTaskEditLogRead {
+  logId: string;
+  userId: string;
+  isRead: boolean;
+}
+
 export interface InMemoryClassRoom {
   id: string;
   className: string;
@@ -132,6 +138,7 @@ export interface InMemoryStore {
   userTaskProgress: Map<string, InMemoryUserTaskProgress>; // `${userId}/${taskId}`
   taskOverrides: Map<string, InMemoryTaskOverride>;
   taskEditLogs: Map<string, InMemoryTaskEditLog>;
+  taskEditLogReads: Map<string, InMemoryTaskEditLogRead>; // `${logId}/${userId}`
   classRooms: Map<string, InMemoryClassRoom>;
   classRoomsByCode: Map<string, string>; // classCode → id
   classRoomMembers: Map<string, InMemoryClassRoomMember>; // `${classRoomId}/${userId}`
@@ -162,6 +169,7 @@ export function createInMemoryStore(): InMemoryStore {
     userTaskProgress: new Map(),
     taskOverrides: new Map(),
     taskEditLogs: new Map(),
+    taskEditLogReads: new Map(),
     classRooms: new Map(),
     classRoomsByCode: new Map(),
     classRoomMembers: new Map(),

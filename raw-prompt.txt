@@ -1,24 +1,20 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [16.2 & 16.3]
+Task Number: [13.4 & 14.]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 16.2 Integrate celebration trigger in task completion flow
-    - Extend completeTaskAction to check if task in OVERCOOKED tier
-    - Calculate stress drop from before/after cumulative scores
-    - Return triggerCelebration flag and stressDrop value
-    - Open AcademicComebackModal with oldTier, newTier, stressDrop props
-    - Update Cooked Meter with animated transition after modal close
-    - _Requirements: 12.1, 12.5, 12.10_
-  
-  - 16.3 Add social share integration to celebration modal
-    - Implement "Share My Comeback" button click handler
-    - Generate temporary Academic Wrapped card snapshot with celebration context
-    - Trigger Web Share API (mobile) or download button (desktop)
-    - _Requirements: 12.9_
+  - 13.4 Write integration tests for edit history
+    - Test TaskEditLog creation on task field changes
+    - Test audit trail display with oldValue/newValue
+    - Test unread badge count
+    - Test mark as read functionality
+    - _Requirements: 9.1, 9.2, 9.6, 9.7, 9.9_
 
-Context/Notes: [requirements.md 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10]
+  - 14. Checkpoint - Dashboard and ClassRoom features complete
+    - Ensure all tests pass, ask the user if questions arise.
+
+Context/Notes: [requirements.md 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

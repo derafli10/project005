@@ -501,8 +501,16 @@ export function buildInMemoryClient() {
 
       async findMany(args: {
         where?: {
+          taskId?: string | { in?: string[] };
+          editorId?: { not?: string };
           fieldName?: string;
           editedAt?: { gte?: Date };
+          readStates?: {
+            none?: {
+              userId?: string;
+              isRead?: boolean;
+            };
+          };
           task?: {
             isSubTask?: boolean;
             userProgress?: {
@@ -514,17 +522,47 @@ export function buildInMemoryClient() {
           };
         };
         select?: Record<string, boolean>;
+        include?: {
+          editor?: { select?: { name?: boolean } };
+          task?: { select?: { title?: boolean } };
+        };
         orderBy?: { editedAt?: "asc" | "desc" };
       }) {
         const s = getInMemoryStore();
         const logs = Array.from(s.taskEditLogs.values());
         
         const filtered = logs.filter((log) => {
+          // Handle taskId filter (string or { in: string[] })
+          if (args.where?.taskId) {
+            if (typeof args.where.taskId === "string") {
+              if (log.taskId !== args.where.taskId) return false;
+            } else if (args.where.taskId.in) {
+              if (!args.where.taskId.in.includes(log.taskId)) return false;
+            }
+          }
+          
+          // Handle editorId.not filter
+          if (args.where?.editorId?.not && log.editorId === args.where.editorId.not) {
+            return false;
+          }
+          
           if (args.where?.fieldName && log.fieldName !== args.where.fieldName) {
             return false;
           }
           if (args.where?.editedAt?.gte && log.editedAt < args.where.editedAt.gte) {
             return false;
+          }
+          
+          // Handle readStates.none filter (check that no read state exists with given conditions)
+          if (args.where?.readStates?.none) {
+            const { userId, isRead } = args.where.readStates.none;
+            const readKey = `${log.id}/${userId}`;
+            const readState = s.taskEditLogReads.get(readKey);
+            
+            // If a read state exists and matches the condition, exclude this log
+            if (readState && readState.isRead === isRead) {
+              return false;
+            }
           }
           
           if (args.where?.task) {
@@ -557,14 +595,77 @@ export function buildInMemoryClient() {
         }
 
         return filtered.map((log) => {
+          const result: any = { ...log };
+          
+          if (args.include?.editor) {
+            const editor = s.users.get(log.editorId);
+            result.editor = editor ? { name: editor.name } : { name: null };
+          }
+          
+          if (args.include?.task) {
+            const task = s.tasks.get(log.taskId);
+            result.task = task ? { title: task.title } : { title: null };
+          }
+          
           if (args.select?.task) {
             const task = s.tasks.get(log.taskId);
-            return {
-              task: task ? { ...task } : null,
-            };
+            result.task = task ? { ...task } : null;
           }
-          return { ...log };
-        }) as any;
+          
+          return result;
+        });
+      },
+    },
+
+    taskEditLogRead: {
+      async createMany(args: { data: unknown; skipDuplicates?: boolean }) {
+        const s = getInMemoryStore();
+        const rows = Array.isArray(args.data) ? args.data : [args.data];
+        let created = 0;
+        
+        for (const d of rows as Array<Record<string, unknown>>) {
+          const logId = String(d.logId);
+          const userId = String(d.userId);
+          const key = `${logId}/${userId}`;
+          
+          // Skip duplicates if requested
+          if (args.skipDuplicates && s.taskEditLogReads.has(key)) {
+            continue;
+          }
+          
+          s.taskEditLogReads.set(key, {
+            logId,
+            userId,
+            isRead: Boolean(d.isRead ?? true),
+          });
+          created++;
+        }
+        
+        return { count: created };
+      },
+
+      async findMany(args: {
+        where?: {
+          logId?: { in?: string[] };
+          userId?: string;
+          isRead?: boolean;
+        };
+      }) {
+        const s = getInMemoryStore();
+        const reads = Array.from(s.taskEditLogReads.values());
+        
+        return reads.filter((read) => {
+          if (args.where?.logId?.in && !args.where.logId.in.includes(read.logId)) {
+            return false;
+          }
+          if (args.where?.userId && read.userId !== args.where.userId) {
+            return false;
+          }
+          if (args.where?.isRead !== undefined && read.isRead !== args.where.isRead) {
+            return false;
+          }
+          return true;
+        });
       },
     },
 
