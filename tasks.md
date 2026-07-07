@@ -552,13 +552,13 @@ This implementation plan translates the design and requirements documents into a
     - Return success or validation error
     - _Requirements: 10.1, 10.4, 10.5, 10.6_
   
-  - [ ] 15.5 Implement post tag filtering
+  - [x] 15.5 Implement post tag filtering
     - Add filter buttons to Feed page
     - Call Server Action to fetch filtered posts by selected tag
     - Update post list without full page refresh
     - _Requirements: 10.9_
   
-  - [ ]* 15.6 Write integration tests for Anonymous Feed
+  - [x]* 15.6 Write integration tests for Anonymous Feed
     - Test post creation with mandatory tag validation
     - Test authorId encryption at rest
     - Test reverse chronological ordering
