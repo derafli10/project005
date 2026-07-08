@@ -1,22 +1,16 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [17.1 & 17.2]
+Task Number: [17.3]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 17.1 Create Academic Wrapped image generation service [MANDATED @VERCEL/OG]
-    - Implement PNG generation in `AcademicWrappedService.renderCard` using pure `@vercel/og` (Satori)
-    - **CRITICAL**: Do NOT use `node-canvas` to avoid serverless native binary compilation issues in Lambda/Vercel functions.
-    - Set dimensions to 1080x1920 (9:16 vertical aspect ratio for mobile stories)
-    - Apply modern gradient background (Gen Z premium palette)
-    - Use Poppins/Inter fonts, display key weekly statistics, custom watermark, and deep link QR code.
-    - _Requirements: 11.3, 11.4, 11.5, 11.6_
-  
-  - 17.2 Implement CDN upload integration
-    - Configure Vercel Blob or Cloudinary for image storage
-    - Implement `AcademicWrappedService.uploadToCDN` to upload the generated PNG buffer
-    - Return public URL for cloud sharing storage
-    - _Requirements: 11.7_
+  - 17.3 Create weekly cron job with background queue/worker [TIMEOUT PREVENTION]
+    - Create `src/app/api/webhooks/cron/route.ts`
+    - Configure Vercel Cron to run every Sunday at 21:00 local time
+    - **CRITICAL**: To avoid Serverless Execution Timeouts, do NOT evaluate and loop through all database users sequentially in a single synchronous thread. Instead, offload the processing payload into a background queue/worker engine (e.g., **Inngest** or **Upstash QStash**) to trigger distributed, parallel chunk processing.
+    - Save AcademicWrapped record with imageUrl
+    - Send in-app notification with preview thumbnail and "Share to Story" CTA
+    - _Requirements: 11.1, 11.8_
 
 Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
 

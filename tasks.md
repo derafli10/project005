@@ -603,7 +603,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 17. Build Academic Wrapped weekly card system
-  - [ ] 17.1 Create Academic Wrapped image generation service [MANDATED @VERCEL/OG]
+  - [x] 17.1 Create Academic Wrapped image generation service [MANDATED @VERCEL/OG]
     - Implement PNG generation in `AcademicWrappedService.renderCard` using pure `@vercel/og` (Satori)
     - **CRITICAL**: Do NOT use `node-canvas` to avoid serverless native binary compilation issues in Lambda/Vercel functions.
     - Set dimensions to 1080x1920 (9:16 vertical aspect ratio for mobile stories)
@@ -611,7 +611,7 @@ This implementation plan translates the design and requirements documents into a
     - Use Poppins/Inter fonts, display key weekly statistics, custom watermark, and deep link QR code.
     - _Requirements: 11.3, 11.4, 11.5, 11.6_
   
-  - [ ] 17.2 Implement CDN upload integration
+  - [x] 17.2 Implement CDN upload integration
     - Configure Vercel Blob or Cloudinary for image storage
     - Implement `AcademicWrappedService.uploadToCDN` to upload the generated PNG buffer
     - Return public URL for cloud sharing storage
