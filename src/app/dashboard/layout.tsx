@@ -10,6 +10,7 @@ import { DashboardNav } from "@/components/DashboardNav";
 import { CookedMeter } from "./components/CookedMeter";
 import { CookedMeterService } from "@/lib/services/cooked-meter.service";
 import { InAppNotifications } from "./components/InAppNotifications";
+import { WrappedWidget } from "./components/WrappedWidget";
 
 /**
  * Dashboard layout — Server Component app shell.
@@ -122,10 +123,16 @@ export default async function DashboardLayout({
           />
 
           {/* Widget D — Academic Wrapped (Task 17). */}
-          <WidgetPlaceholder
+          <WrappedWidget
             label={t("dashboard.widget.wrapped")}
             ariaLabel={t("wrapped.title")}
-            className="md:col-span-2 xl:col-span-2"
+            viewAllLabel={t("wrapped.title")}
+            userId={session.user.id}
+            locale={locale}
+            weekRangeTemplate={t("wrapped.weekRange")}
+            savedCreditsLabel={t("wrapped.savedCredits")}
+            tasksCompletedLabel={t("wrapped.tasksCompleted")}
+            emptyMessage={t("wrapped.empty.message")}
           />
         </div>
       </main>

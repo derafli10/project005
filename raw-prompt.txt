@@ -1,16 +1,15 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [17.3]
+Task Number: [17.4]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 17.3 Create weekly cron job with background queue/worker [TIMEOUT PREVENTION]
-    - Create `src/app/api/webhooks/cron/route.ts`
-    - Configure Vercel Cron to run every Sunday at 21:00 local time
-    - **CRITICAL**: To avoid Serverless Execution Timeouts, do NOT evaluate and loop through all database users sequentially in a single synchronous thread. Instead, offload the processing payload into a background queue/worker engine (e.g., **Inngest** or **Upstash QStash**) to trigger distributed, parallel chunk processing.
-    - Save AcademicWrapped record with imageUrl
-    - Send in-app notification with preview thumbnail and "Share to Story" CTA
-    - _Requirements: 11.1, 11.8_
+  - 17.4 Create Wrapped card preview and share UI
+    - Create `src/app/dashboard/wrapped/page.tsx` displaying user's past wrapped cards
+    - Show thumbnail gallery with week dates
+    - Add "Share to Story" button triggering Web Share API
+    - Fallback to download button on desktop
+    - _Requirements: 11.9_
 
 Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
 
