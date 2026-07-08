@@ -625,7 +625,7 @@ This implementation plan translates the design and requirements documents into a
     - Send in-app notification with preview thumbnail and "Share to Story" CTA
     - _Requirements: 11.1, 11.8_
   
-  - [ ] 17.4 Create Wrapped card preview and share UI
+  - [x] 17.4 Create Wrapped card preview and share UI
     - Create `src/app/dashboard/wrapped/page.tsx` displaying user's past wrapped cards
     - Show thumbnail gallery with week dates
     - Add "Share to Story" button triggering Web Share API
