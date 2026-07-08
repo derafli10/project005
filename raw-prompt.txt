@@ -1,20 +1,24 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [13.4 & 14.]
+Task Number: [17.1 & 17.2]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 13.4 Write integration tests for edit history
-    - Test TaskEditLog creation on task field changes
-    - Test audit trail display with oldValue/newValue
-    - Test unread badge count
-    - Test mark as read functionality
-    - _Requirements: 9.1, 9.2, 9.6, 9.7, 9.9_
+  - 17.1 Create Academic Wrapped image generation service [MANDATED @VERCEL/OG]
+    - Implement PNG generation in `AcademicWrappedService.renderCard` using pure `@vercel/og` (Satori)
+    - **CRITICAL**: Do NOT use `node-canvas` to avoid serverless native binary compilation issues in Lambda/Vercel functions.
+    - Set dimensions to 1080x1920 (9:16 vertical aspect ratio for mobile stories)
+    - Apply modern gradient background (Gen Z premium palette)
+    - Use Poppins/Inter fonts, display key weekly statistics, custom watermark, and deep link QR code.
+    - _Requirements: 11.3, 11.4, 11.5, 11.6_
+  
+  - 17.2 Implement CDN upload integration
+    - Configure Vercel Blob or Cloudinary for image storage
+    - Implement `AcademicWrappedService.uploadToCDN` to upload the generated PNG buffer
+    - Return public URL for cloud sharing storage
+    - _Requirements: 11.7_
 
-  - 14. Checkpoint - Dashboard and ClassRoom features complete
-    - Ensure all tests pass, ask the user if questions arise.
-
-Context/Notes: [requirements.md 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.10]
+Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
