@@ -617,7 +617,7 @@ This implementation plan translates the design and requirements documents into a
     - Return public URL for cloud sharing storage
     - _Requirements: 11.7_
   
-  - [ ] 17.3 Create weekly cron job with background queue/worker [TIMEOUT PREVENTION]
+  - [x] 17.3 Create weekly cron job with background queue/worker [TIMEOUT PREVENTION]
     - Create `src/app/api/webhooks/cron/route.ts`
     - Configure Vercel Cron to run every Sunday at 21:00 local time
     - **CRITICAL**: To avoid Serverless Execution Timeouts, do NOT evaluate and loop through all database users sequentially in a single synchronous thread. Instead, offload the processing payload into a background queue/worker engine (e.g., **Inngest** or **Upstash QStash**) to trigger distributed, parallel chunk processing.
