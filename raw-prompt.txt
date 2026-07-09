@@ -1,17 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [17.4]
+Task Number: [16.4]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 17.4 Create Wrapped card preview and share UI
-    - Create `src/app/dashboard/wrapped/page.tsx` displaying user's past wrapped cards
-    - Show thumbnail gallery with week dates
-    - Add "Share to Story" button triggering Web Share API
-    - Fallback to download button on desktop
-    - _Requirements: 11.9_
+  -16.4 Write integration tests for Academic Comeback
+    - Test celebration trigger only for OVERCOOKED task completions
+    - Test stress drop calculation accuracy
+    - Test modal display and animations
+    - Test Cooked Meter update after modal close
+    - _Requirements: 12.1, 12.5, 12.10_
 
-Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
+Context/Notes: [requirements.md 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
