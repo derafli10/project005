@@ -1,5 +1,6 @@
 import { inngest } from "./inngest";
 import { academicWrappedService } from "./services/academic-wrapped.service";
+import { DailyDigestService } from "./services/daily-digest.service";
 import { baseDb } from "./db";
 
 /**
@@ -81,3 +82,25 @@ export const processUserWrapped = inngest.createFunction(
     return { success: true, userId, imageUrl: wrapped.imageUrl };
   }
 );
+
+/**
+ * Inngest function that triggers for each user to execute daily digest message delivery idempotently.
+ */
+export const processDailyDigest = inngest.createFunction(
+  {
+    id: "process-daily-digest",
+    name: "Process Daily Digest",
+    triggers: { event: "app/digest.process" },
+  },
+  async ({ event, step }) => {
+    const { userId, dateStr } = event.data;
+    const date = new Date(dateStr);
+
+    await step.run("deliver-digest", async () => {
+      await DailyDigestService.attemptIdempotentDelivery(userId, date);
+    });
+
+    return { success: true, userId };
+  }
+);
+

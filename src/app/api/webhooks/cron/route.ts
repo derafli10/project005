@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { baseDb } from "@/lib/db";
 import { inngest } from "@/lib/inngest";
+import { DailyDigestService } from "@/lib/services/daily-digest.service";
 
 /**
  * Scheduled Cron Endpoint: GET /api/webhooks/cron
- * Designed for Vercel Cron to run every Sunday at 21:00.
+ * Designed for Vercel Cron.
+ *
+ * Supports query parameter `type=digest` for daily digest processing (runs every 30 mins)
+ * or defaults/resolves `type=wrapped` for weekly wrapped card rendering (runs Sunday at 21:00).
  *
  * Prevents Serverless Execution Timeouts by dispatching user payloads
  * to the Inngest background queue for distributed, parallel chunk processing.
  *
- * Requirements: 11.1, 11.8
+ * Requirements: 11.1, 11.8, 13.3
  */
 export async function GET(request: Request) {
   try {
@@ -25,41 +29,80 @@ export async function GET(request: Request) {
       });
     }
 
-    // 1. Fetch all users who need weekly wrapped cards generated.
-    const users = await baseDb.user.findMany({
-      select: { id: true },
-    });
+    const { searchParams } = new URL(request.url);
+    const cronType = searchParams.get("type");
 
-    const nowStr = new Date().toISOString();
-    const dispatched: string[] = [];
+    const now = new Date();
+    const nowStr = now.toISOString();
 
-    // 2. Offload the processing payload to Inngest for parallel background execution.
-    // This executes in milliseconds, avoiding HTTP gateway timeouts.
-    const events = users.map((user) => ({
-      name: "app/wrapped.process",
-      data: {
-        userId: user.id,
-        dateStr: nowStr,
-      },
-    }));
+    if (cronType === "digest") {
+      // 1. Fetch users who have daily digest enabled
+      const users = await baseDb.user.findMany({
+        where: { digestEnabled: true },
+        select: { id: true, digestEnabled: true, digestTime: true },
+      });
 
-    if (events.length > 0) {
-      await inngest.send(events);
-    }
+      // 2. Filter users whose digestTime matches current time ± 15 mins
+      const matchingUsers = users.filter((user) =>
+        DailyDigestService.shouldSendDigest(user, now)
+      );
 
-    return new NextResponse(
-      JSON.stringify({
-        success: true,
-        message: `Dispatched background jobs for ${users.length} users.`,
-        dispatchedCount: users.length,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
+      // 3. Dispatch to background worker queue via Inngest
+      const events = matchingUsers.map((user) => ({
+        name: "app/digest.process",
+        data: {
+          userId: user.id,
+          dateStr: nowStr,
+        },
+      }));
+
+      if (events.length > 0) {
+        await inngest.send(events);
       }
-    );
+
+      return new NextResponse(
+        JSON.stringify({
+          success: true,
+          message: `Dispatched daily digest background jobs for ${matchingUsers.length} users.`,
+          dispatchedCount: matchingUsers.length,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } else {
+      // Default: Weekly Wrapped cron job
+      const users = await baseDb.user.findMany({
+        select: { id: true },
+      });
+
+      const events = users.map((user) => ({
+        name: "app/wrapped.process",
+        data: {
+          userId: user.id,
+          dateStr: nowStr,
+        },
+      }));
+
+      if (events.length > 0) {
+        await inngest.send(events);
+      }
+
+      return new NextResponse(
+        JSON.stringify({
+          success: true,
+          message: `Dispatched background jobs for ${users.length} users.`,
+          dispatchedCount: users.length,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error: any) {
-    console.error("[Weekly Wrapped Cron Error]", error);
+    console.error("[Cron Webhook Error]", error);
     return new NextResponse(
       JSON.stringify({
         success: false,

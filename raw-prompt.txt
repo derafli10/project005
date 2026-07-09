@@ -1,17 +1,18 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [17.5]
+Task Number: [18.2]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 17.5 Write integration tests for Academic Wrapped
-    - Test week stats calculation (saved credits sum, tasks completed, streak)
-    - Test PNG generation with correct dimensions (1080x1920)
-    - Test CDN upload and URL return
-    - Test cron job execution and worker distribution pipeline
-    - _Requirements: 11.1, 11.2, 11.3, 11.4_
+  - 18.2 Create digest cron job with background queue worker [TIMEOUT PREVENTION]
+    - Create digest route handler in `src/app/api/webhooks/cron/route.ts`
+    - Configure Vercel Cron to run every 30 minutes
+    - Query users with digestEnabled=true and digestTime matching current time ± 15 min
+    - **CRITICAL**: Offload the messaging delivery pipeline of each matching user to a background worker queue (**Inngest** or **QStash**) to run parallel async execution batches, mitigating Vercel serverless execution limits.
+    - Log execution results (success/failure) to DailyDigestLog
+    - _Requirements: 13.3, 13.4, 13.5, 13.6_
 
-Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
+Context/Notes: [requirements.md 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

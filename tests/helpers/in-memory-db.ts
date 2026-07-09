@@ -286,6 +286,11 @@ export function buildInMemoryClient() {
         return result;
       },
 
+      async count(args?: any) {
+        const rows = await this.findMany(args);
+        return rows.length;
+      },
+
       async findMany(args: {
         where: {
           userId?: string;
