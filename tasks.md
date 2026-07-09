@@ -632,7 +632,7 @@ This implementation plan translates the design and requirements documents into a
     - Fallback to download button on desktop
     - _Requirements: 11.9_
   
-  - [ ]* 17.5 Write integration tests for Academic Wrapped
+  - [x]* 17.5 Write integration tests for Academic Wrapped
     - Test week stats calculation (saved credits sum, tasks completed, streak)
     - Test PNG generation with correct dimensions (1080x1920)
     - Test CDN upload and URL return
