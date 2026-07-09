@@ -594,7 +594,7 @@ This implementation plan translates the design and requirements documents into a
     - Trigger Web Share API (mobile) or download button (desktop)
     - _Requirements: 12.9_
   
-  - [ ]* 16.4 Write integration tests for Academic Comeback
+  - [x]* 16.4 Write integration tests for Academic Comeback
     - Test celebration trigger only for OVERCOOKED task completions
     - Test stress drop calculation accuracy
     - Test modal display and animations

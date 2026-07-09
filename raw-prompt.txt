@@ -1,17 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [16.4]
+Task Number: [17.5]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  -16.4 Write integration tests for Academic Comeback
-    - Test celebration trigger only for OVERCOOKED task completions
-    - Test stress drop calculation accuracy
-    - Test modal display and animations
-    - Test Cooked Meter update after modal close
-    - _Requirements: 12.1, 12.5, 12.10_
+  - 17.5 Write integration tests for Academic Wrapped
+    - Test week stats calculation (saved credits sum, tasks completed, streak)
+    - Test PNG generation with correct dimensions (1080x1920)
+    - Test CDN upload and URL return
+    - Test cron job execution and worker distribution pipeline
+    - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-Context/Notes: [requirements.md 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10]
+Context/Notes: [requirements.md 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

@@ -135,6 +135,17 @@ export function buildInMemoryClient() {
         s.users.set(existing.id, updated);
         return selectProject({ ...updated }, args.select);
       },
+
+      async findMany(args?: {
+        select?: Record<string, boolean>;
+      }) {
+        const s = getInMemoryStore();
+        const out: any[] = [];
+        for (const u of s.users.values()) {
+          out.push(selectProject({ ...u }, args?.select));
+        }
+        return out;
+      },
     },
 
     session: {
