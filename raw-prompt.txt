@@ -1,16 +1,16 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [18.2]
+Task Number: [18.1]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 18.2 Create digest cron job with background queue worker [TIMEOUT PREVENTION]
-    - Create digest route handler in `src/app/api/webhooks/cron/route.ts`
-    - Configure Vercel Cron to run every 30 minutes
-    - Query users with digestEnabled=true and digestTime matching current time ± 15 min
-    - **CRITICAL**: Offload the messaging delivery pipeline of each matching user to a background worker queue (**Inngest** or **QStash**) to run parallel async execution batches, mitigating Vercel serverless execution limits.
-    - Log execution results (success/failure) to DailyDigestLog
-    - _Requirements: 13.3, 13.4, 13.5, 13.6_
+  - 18.1 Create user settings page for digest preferences
+    - Create `src/app/settings/page.tsx`
+    - Add toggle switch for digestEnabled
+    - Add time picker for digestTime (HH:MM format)
+    - Add dropdown for deliveryChannel (WHATSAPP, TELEGRAM)
+    - Save preferences to User record via Server Action
+    - _Requirements: 13.1, 13.2_
 
 Context/Notes: [requirements.md 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10]
 
