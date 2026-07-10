@@ -641,7 +641,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 18. Build Daily Digest system
-  - [ ] 18.1 Create user settings page for digest preferences
+  - [x] 18.1 Create user settings page for digest preferences
     - Create `src/app/settings/page.tsx`
     - Add toggle switch for digestEnabled
     - Add time picker for digestTime (HH:MM format)
