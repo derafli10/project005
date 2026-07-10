@@ -261,5 +261,16 @@
   "toast.failed": "Aksi gagal",
   "toast.copied": "Tersalin ke clipboard",
   "notification.updated": "Task {title} diupdate oleh {name}",
-  "notification.viewHistory": "Lihat riwayat"
+  "notification.viewHistory": "Lihat riwayat",
+
+  "digest.greeting": "Halo! Berikut ringkasan tugas harianmu:",
+  "digest.pendingCount": "Total tugas tertunda: {count}",
+  "digest.top3Heading": "Top 3 Tugas Prioritas:",
+  "digest.taskScore": "{rank}. {title} (Skor: {score})",
+  "digest.noTasks": "Tidak ada tugas tertunda.",
+  "digest.changesHeading": "Perubahan sejak kemarin:",
+  "digest.newlyAdded": "- Baru ditambahkan: {items}",
+  "digest.deadlineChanges": "- Perubahan deadline: {items}",
+  "digest.priorityEscalations": "- Eskalasi prioritas: {items}",
+  "digest.noChanges": "-"
 }

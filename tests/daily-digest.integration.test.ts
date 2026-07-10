@@ -130,10 +130,18 @@ beforeEach(() => {
   mockInngestSend.mockClear();
   mockFetch.mockClear();
   global.fetch = mockFetch;
+
+  // Provide API credentials so the service doesn't throw ExternalServiceError
+  process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
+  process.env.TWILIO_ACCOUNT_SID = "test-account-sid";
+  process.env.TWILIO_AUTH_TOKEN = "test-auth-token";
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.TWILIO_ACCOUNT_SID;
+  delete process.env.TWILIO_AUTH_TOKEN;
 });
 
 // ─── Test Helpers ───────────────────────────────────────────────────────────
@@ -213,7 +221,7 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
     const userId = seedUser("deliver@test.com", true, "12:00", null, "123456");
 
     // Stub external API delivery
-    mockFetch.mockResolvedValue(new Response(null, { status: 200 }));
+    mockFetch.mockResolvedValue(new Response(JSON.stringify({ result: { message_id: 1 } }), { status: 200, headers: { "Content-Type": "application/json" } }));
 
     // Execute the Inngest handler steps directly via the service or simulate Inngest run.
     // Inngest testing helpers/directly invoking standard service logic:
@@ -235,7 +243,7 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
   it("prevents duplicate deliveries for the same user on the same date (Idempotency Key)", async () => {
     const userId = seedUser("duplicate@test.com", true, "12:00", null, "123456");
 
-    mockFetch.mockResolvedValue(new Response(null, { status: 200 }));
+    mockFetch.mockResolvedValue(new Response(JSON.stringify({ result: { message_id: 1 } }), { status: 200, headers: { "Content-Type": "application/json" } }));
 
     // Run first delivery
     await DailyDigestService.attemptIdempotentDelivery(userId, NOW);

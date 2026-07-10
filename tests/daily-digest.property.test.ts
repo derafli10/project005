@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import fc from "fast-check";
 
 import { resetInMemoryDb, getInMemoryStore } from "./helpers/store";
@@ -76,6 +76,17 @@ import { DailyDigestService } from "@/lib/services/daily-digest.service";
 beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
+  process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
+  process.env.TWILIO_ACCOUNT_SID = "test-account-sid";
+  process.env.TWILIO_AUTH_TOKEN = "test-auth-token";
+  process.env.TWILIO_WHATSAPP_FROM = "whatsapp:+14155238886";
+});
+
+afterEach(() => {
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.TWILIO_ACCOUNT_SID;
+  delete process.env.TWILIO_AUTH_TOKEN;
+  delete process.env.TWILIO_WHATSAPP_FROM;
 });
 
 const NOW = new Date("2026-06-25T11:10:00Z");
@@ -197,7 +208,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
             }
 
             // Generate digest message
-            const message = await DailyDigestService.generateDigestMessage(u.id, NOW);
+            const message = await DailyDigestService.generateDigestMessage(u.id, "ID", NOW);
 
             // Assert pending parent count is correct
             const pendingParentTasks = Array.from(store.tasks.values()).filter((t) => {
@@ -244,7 +255,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
       global.fetch = fetchSpy;
 
       // 1. Success case
-      fetchSpy.mockResolvedValueOnce({ ok: true });
+      fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ sid: "SM123" }), { status: 200, headers: { "Content-Type": "application/json" } }));
 
       await DailyDigestService.attemptIdempotentDelivery(u.id, NOW);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -281,7 +292,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
       fetchSpy
         .mockRejectedValueOnce(new Error("Network Error 1"))
         .mockRejectedValueOnce(new Error("Network Error 2"))
-        .mockResolvedValueOnce({ ok: true });
+        .mockResolvedValueOnce(new Response(JSON.stringify({ result: { message_id: 123 } }), { status: 200, headers: { "Content-Type": "application/json" } }));
 
       vi.useFakeTimers();
       const promise = DailyDigestService.attemptIdempotentDelivery(u2.id, NOW);
