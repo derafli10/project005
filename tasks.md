@@ -649,7 +649,7 @@ This implementation plan translates the design and requirements documents into a
     - Save preferences to User record via Server Action
     - _Requirements: 13.1, 13.2_
   
-  - [ ] 18.2 Create digest cron job with background queue worker [TIMEOUT PREVENTION]
+  - [x] 18.2 Create digest cron job with background queue worker [TIMEOUT PREVENTION]
     - Create digest route handler in `src/app/api/webhooks/cron/route.ts`
     - Configure Vercel Cron to run every 30 minutes
     - Query users with digestEnabled=true and digestTime matching current time ± 15 min
