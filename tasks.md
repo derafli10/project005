@@ -657,7 +657,7 @@ This implementation plan translates the design and requirements documents into a
     - Log execution results (success/failure) to DailyDigestLog
     - _Requirements: 13.3, 13.4, 13.5, 13.6_
   
-  - [ ] 18.3 Implement digest message generation
+  - [x] 18.3 Implement digest message generation
     - Extend DailyDigestService.generateDigestMessage
     - Include: pending Parent Task count (isSubTask=false filter)
     - List top 3 tasks by JIT Priority_Score
@@ -665,7 +665,7 @@ This implementation plan translates the design and requirements documents into a
     - Support both EN and ID locales via early shifted translation logic
     - _Requirements: 13.8, 13.9_
   
-  - [ ] 18.4 Configure WhatsApp Business API integration
+  - [x] 18.4 Configure WhatsApp Business API integration
     - Set up Twilio/Fonnte/WhatsApp Business API credentials in environment variables
     - Implement DailyDigestService.sendViaWhatsApp
     - Wrap with exponential backoff retry (max 3 attempts)
