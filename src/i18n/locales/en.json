@@ -3,7 +3,6 @@
     "locale": "en",
     "displayName": "English"
   },
-
   "common.appName": "Project005",
   "common.appTagline": "Task Management DSS",
   "common.loading": "Loading…",
@@ -27,19 +26,16 @@
   "common.hours": "hours",
   "common.day": "day",
   "common.hour": "hour",
-
   "locale.en": "English",
   "locale.id": "Bahasa Indonesia",
   "locale.switcher.label": "Language",
   "locale.switcher.switchTo": "Switch to",
-
   "nav.dashboard": "Dashboard",
   "nav.classrooms": "Classrooms",
   "nav.feed": "Feed",
   "nav.settings": "Settings",
   "nav.logout": "Logout",
   "nav.profile": "Profile",
-
   "auth.login.title": "Login",
   "auth.login.subtitle": "Sign in to your account",
   "auth.login.emailLabel": "Email",
@@ -50,7 +46,6 @@
   "auth.login.noAccount": "Don't have an account?",
   "auth.login.registerLink": "Register",
   "auth.login.invalidCredentials": "Email or password is incorrect",
-
   "auth.register.title": "Register",
   "auth.register.subtitle": "Create your account",
   "auth.register.nameLabel": "Name",
@@ -65,10 +60,8 @@
   "auth.register.loginLink": "Login",
   "auth.register.emailExists": "Email is already registered",
   "auth.register.passwordShort": "Password must be at least 8 characters",
-
   "auth.error.required": "This field is required",
   "auth.error.emailInvalid": "Invalid email format",
-
   "dashboard.title": "Dashboard",
   "dashboard.greeting.morning": "Good morning",
   "dashboard.greeting.afternoon": "Good afternoon",
@@ -77,14 +70,12 @@
   "dashboard.widget.cookedMeter": "Am I Cooked?",
   "dashboard.widget.feed": "Classroom Feed",
   "dashboard.widget.wrapped": "Academic Wrapped",
-
   "queue.title": "Your Task Queue",
   "queue.empty.title": "All clear!",
   "queue.empty.message": "You have no pending tasks. Time to relax or get ahead.",
   "queue.empty.cta": "Create a Task",
   "queue.dragHandle": "Drag to reorder",
   "queue.reorderFailed": "Couldn't save the new order — moved back.",
-
   "task.create": "Create Task",
   "task.create.title": "Create Task",
   "task.create.titleLabel": "Title",
@@ -99,7 +90,6 @@
   "task.create.classRoomNone": "None (personal task)",
   "task.create.submit": "Create Task",
   "task.create.success": "Task created successfully",
-
   "task.card.deadline": "Deadline",
   "task.card.status.pending": "Pending",
   "task.card.status.in_progress": "In Progress",
@@ -111,14 +101,11 @@
   "task.card.slaBreach": "🔥 SLA BREACH",
   "task.card.viewHistory": "View History",
   "task.card.updatesBadge": "New updates",
-
   "task.microPrompt.template": "SKS: {sks} • Weight: {weight}% • Deadline: {days} days",
   "task.microPrompt.slaBreach": "🔥 SLA BREACH",
-
   "task.status.PENDING": "Pending",
   "task.status.IN_PROGRESS": "In Progress",
   "task.status.COMPLETED": "Completed",
-
   "override.modal.title": "Why did you move this task up?",
   "override.modal.question": "Why are you moving this task up?",
   "override.modal.subtitle": "Help the system learn your priorities",
@@ -128,7 +115,6 @@
   "override.option.personal": "Personal reason",
   "override.modal.personalPlaceholder": "Tell us why",
   "override.modal.submit": "Save Reason",
-
   "cooked.tier.main_character": "The Main Character",
   "cooked.tier.let_him_cook": "Let Him Cook",
   "cooked.tier.slightly_cooked": "Slightly Cooked",
@@ -137,7 +123,6 @@
   "cooked.meter.currentScore": "Current Stress Score",
   "cooked.meter.sparkline": "7-day trend",
   "cooked.meter.updatedNow": "Updated",
-
   "recovery.modal.title": "Recovery Mode",
   "recovery.modal.message": "Your workload is high. Activate Recovery Mode to break down complex tasks?",
   "recovery.modal.activate": "Activate",
@@ -148,14 +133,12 @@
   "recovery.motivational.2": "Break it down, build it up. You're progressing. 🚀",
   "recovery.motivational.3": "Small wins compound. Keep going. ✨",
   "recovery.exitZone": "Congrats! You're out of the red zone",
-
   "celebration.comeback": "THE ACADEMIC COMEBACK IS REAL!",
   "celebration.subtitle": "You crushed an Overcooked task",
   "celebration.stressDrop": "Stress Drop",
   "celebration.share": "Share My Comeback",
   "celebration.from": "From",
   "celebration.to": "to",
-
   "classroom.title": "Classrooms",
   "classroom.create": "Create Class",
   "classroom.join": "Join Class",
@@ -180,7 +163,6 @@
   "classroom.empty.message": "Create or join a class to share tasks with classmates.",
   "classroom.detail.members": "Members",
   "classroom.detail.openFeed": "Open Feed",
-
   "feed.title": "Classroom Feed",
   "feed.createPost": "Create Post",
   "feed.post.contentLabel": "What's on your mind?",
@@ -195,12 +177,10 @@
   "feed.filter.title": "Filter by category",
   "feed.empty.title": "No posts yet",
   "feed.empty.message": "Be the first to post anonymously.",
-
   "post.tag.CURHAT_TUGAS": "#TaskVent",
   "post.tag.BUTUH_TEMAN_TIM": "#NeedTeam",
   "post.tag.TANYA_JAWABAN": "#QnA",
   "post.tag.DISKUSI_UMUM": "#General",
-
   "settings.title": "Settings",
   "settings.locale.label": "Language",
   "settings.locale.subtitle": "Choose your interface language",
@@ -220,14 +200,12 @@
   "settings.sound.label": "Celebration Sound",
   "settings.save": "Save Settings",
   "settings.saved": "Settings saved",
-
-  "digest.newTasks": "New tasks",
-  "digest.deadlineChanges": "Deadline changes",
-  "digest.escalations": "Priority escalations",
-  "digest.pendingCount": "{count} pending parent task(s)",
-  "digest.topTasks": "Top 3 tasks",
-  "digest.whatChanged": "What changed since yesterday?",
-
+  "digest.widget.newTasks": "New tasks",
+  "digest.widget.deadlineChanges": "Deadline changes",
+  "digest.widget.escalations": "Priority escalations",
+  "digest.widget.pendingCount": "{count} pending parent task(s)",
+  "digest.widget.topTasks": "Top 3 tasks",
+  "digest.widget.whatChanged": "What changed since yesterday?",
   "wrapped.title": "Academic Wrapped",
   "wrapped.weekRange": "{start} – {end}",
   "wrapped.savedCredits": "Saved Credits",
@@ -239,7 +217,6 @@
   "wrapped.generatedBy": "Generated by Project005",
   "wrapped.empty.title": "No wrapped cards yet",
   "wrapped.empty.message": "Check back after the week wraps up.",
-
   "history.title": "Task History",
   "history.field.deadlineAt": "Deadline",
   "history.field.taskWeight": "Grade Weight",
@@ -249,7 +226,6 @@
   "history.updatedBy": "Updated by {name}",
   "history.markedRead": "Marked as read",
   "history.empty": "No changes yet",
-
   "error.generic": "Something went wrong",
   "error.unauthorized": "You must be logged in",
   "error.forbidden": "You don't have access to this",
@@ -262,7 +238,6 @@
   "toast.copied": "Copied to clipboard",
   "notification.updated": "Task {title} was updated by {name}",
   "notification.viewHistory": "View edit history",
-
   "digest.greeting": "Hi! Here's your daily task summary:",
   "digest.pendingCount": "Total pending tasks: {count}",
   "digest.top3Heading": "Top 3 Priority Tasks:",

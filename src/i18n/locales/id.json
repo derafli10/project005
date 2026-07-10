@@ -3,7 +3,6 @@
     "locale": "id",
     "displayName": "Bahasa Indonesia"
   },
-
   "common.appName": "Project005",
   "common.appTagline": "Manajemen Tugas DSS",
   "common.loading": "Memuat…",
@@ -27,19 +26,16 @@
   "common.hours": "jam",
   "common.day": "hari",
   "common.hour": "jam",
-
   "locale.en": "English",
   "locale.id": "Bahasa Indonesia",
   "locale.switcher.label": "Bahasa",
   "locale.switcher.switchTo": "Ganti ke",
-
   "nav.dashboard": "Dashboard",
   "nav.classrooms": "Kelas",
   "nav.feed": "Feed",
   "nav.settings": "Pengaturan",
   "nav.logout": "Keluar",
   "nav.profile": "Profil",
-
   "auth.login.title": "Masuk",
   "auth.login.subtitle": "Masuk ke akun kamu",
   "auth.login.emailLabel": "Email",
@@ -50,7 +46,6 @@
   "auth.login.noAccount": "Belum punya akun?",
   "auth.login.registerLink": "Daftar",
   "auth.login.invalidCredentials": "Email atau password salah",
-
   "auth.register.title": "Daftar",
   "auth.register.subtitle": "Buat akun kamu",
   "auth.register.nameLabel": "Nama",
@@ -65,10 +60,8 @@
   "auth.register.loginLink": "Masuk",
   "auth.register.emailExists": "Email sudah terdaftar",
   "auth.register.passwordShort": "Password harus minimal 8 karakter",
-
   "auth.error.required": "Kolom ini wajib diisi",
   "auth.error.emailInvalid": "Format email tidak valid",
-
   "dashboard.title": "Dashboard",
   "dashboard.greeting.morning": "Selamat pagi",
   "dashboard.greeting.afternoon": "Selamat siang",
@@ -77,14 +70,12 @@
   "dashboard.widget.cookedMeter": "Am I Cooked?",
   "dashboard.widget.feed": "Feed Kelas",
   "dashboard.widget.wrapped": "Academic Wrapped",
-
   "queue.title": "Antrian Tugas Kamu",
   "queue.empty.title": "Aman semua!",
   "queue.empty.message": "Kamu gak ada tugas pending. Saatnya santai atau majuin kerjaan.",
   "queue.empty.cta": "Buat Tugas",
   "queue.dragHandle": "Seret untuk mengurutkan ulang",
   "queue.reorderFailed": "Gagal menyimpan urutan baru — dikembalikan.",
-
   "task.create": "Buat Tugas",
   "task.create.title": "Buat Tugas",
   "task.create.titleLabel": "Judul",
@@ -99,7 +90,6 @@
   "task.create.classRoomNone": "Tidak (tugas pribadi)",
   "task.create.submit": "Buat Tugas",
   "task.create.success": "Tugas berhasil dibuat",
-
   "task.card.deadline": "Deadline",
   "task.card.status.pending": "Belum Dikerjakan",
   "task.card.status.in_progress": "Sedang Dikerjakan",
@@ -111,14 +101,11 @@
   "task.card.slaBreach": "🔥 SLA BREACH",
   "task.card.viewHistory": "Lihat Riwayat",
   "task.card.updatesBadge": "Ada Update",
-
   "task.microPrompt.template": "SKS: {sks} • Bobot: {weight}% • Deadline: {days} hari",
   "task.microPrompt.slaBreach": "🔥 SLA BREACH",
-
   "task.status.PENDING": "Belum Dikerjakan",
   "task.status.IN_PROGRESS": "Sedang Dikerjakan",
   "task.status.COMPLETED": "Selesai",
-
   "override.modal.title": "Kenapa kamu memindah tugas ini?",
   "override.modal.question": "Kenapa kamu memindahkan tugas ini ke atas?",
   "override.modal.subtitle": "Bantu sistem belajar prioritas kamu",
@@ -128,7 +115,6 @@
   "override.option.personal": "Alasan pribadi",
   "override.modal.personalPlaceholder": "Kasih tahu alasannya",
   "override.modal.submit": "Simpan Alasan",
-
   "cooked.tier.main_character": "The Main Character",
   "cooked.tier.let_him_cook": "Let Him Cook",
   "cooked.tier.slightly_cooked": "Slightly Cooked",
@@ -137,7 +123,6 @@
   "cooked.meter.currentScore": "Skor Beban Saat Ini",
   "cooked.meter.sparkline": "Tren 7 hari",
   "cooked.meter.updatedNow": "Diperbarui",
-
   "recovery.modal.title": "Recovery Mode",
   "recovery.modal.message": "Beban tugasmu tinggi. Aktifkan Recovery Mode untuk breakdown tugas kompleks?",
   "recovery.modal.activate": "Aktifkan",
@@ -148,14 +133,12 @@
   "recovery.motivational.2": "Pecah jadi kecil, bangun jadi besar. Kamu maju. 🚀",
   "recovery.motivational.3": "Kemenangan kecil itu berungkit. Terus aja. ✨",
   "recovery.exitZone": "Selamat! Kamu keluar dari zona merah",
-
   "celebration.comeback": "ACADEMIC COMEBACK ITU NYATA!",
   "celebration.subtitle": "Kamu habisi tugas yang Overcooked",
   "celebration.stressDrop": "Penurunan Beban",
   "celebration.share": "Share Comeback Aku",
   "celebration.from": "Dari",
   "celebration.to": "ke",
-
   "classroom.title": "Kelas",
   "classroom.create": "Buat Kelas",
   "classroom.join": "Gabung Kelas",
@@ -180,7 +163,6 @@
   "classroom.empty.message": "Buat atau gabung kelas buat berbagi tugas sama teman sekelas.",
   "classroom.detail.members": "Anggota",
   "classroom.detail.openFeed": "Buka Feed",
-
   "feed.title": "Feed Kelas",
   "feed.createPost": "Buat Post",
   "feed.post.contentLabel": "Apa yang kamu pikirin?",
@@ -195,12 +177,10 @@
   "feed.filter.title": "Filter berdasarkan kategori",
   "feed.empty.title": "Belum ada post",
   "feed.empty.message": "Jadilah yang pertama posting anonim.",
-
   "post.tag.CURHAT_TUGAS": "#CurhatTugas",
   "post.tag.BUTUH_TEMAN_TIM": "#ButuhTemanTim",
   "post.tag.TANYA_JAWABAN": "#TanyaJawab",
   "post.tag.DISKUSI_UMUM": "#DiskusiUmum",
-
   "settings.title": "Pengaturan",
   "settings.locale.label": "Bahasa",
   "settings.locale.subtitle": "Pilih bahasa antarmuka kamu",
@@ -220,14 +200,12 @@
   "settings.sound.label": "Suara Perayaan",
   "settings.save": "Simpan Pengaturan",
   "settings.saved": "Pengaturan tersimpan",
-
-  "digest.newTasks": "Tugas baru",
-  "digest.deadlineChanges": "Perubahan deadline",
-  "digest.escalations": "Eskalasi prioritas",
-  "digest.pendingCount": "{count} parent task pending",
-  "digest.topTasks": "Top 3 tugas",
-  "digest.whatChanged": "Ada apa aja sejak kemarin?",
-
+  "digest.widget.newTasks": "Tugas baru",
+  "digest.widget.deadlineChanges": "Perubahan deadline",
+  "digest.widget.escalations": "Eskalasi prioritas",
+  "digest.widget.pendingCount": "{count} parent task pending",
+  "digest.widget.topTasks": "Top 3 tugas",
+  "digest.widget.whatChanged": "Ada apa aja sejak kemarin?",
   "wrapped.title": "Academic Wrapped",
   "wrapped.weekRange": "{start} – {end}",
   "wrapped.savedCredits": "Saved Credits",
@@ -239,7 +217,6 @@
   "wrapped.generatedBy": "Generated by Project005",
   "wrapped.empty.title": "Belum ada kartu wrapped",
   "wrapped.empty.message": "Balik lagi setelah minggu ini selesai.",
-
   "history.title": "Riwayat Tugas",
   "history.field.deadlineAt": "Deadline",
   "history.field.taskWeight": "Bobot Nilai",
@@ -249,7 +226,6 @@
   "history.updatedBy": "Diupdate oleh {name}",
   "history.markedRead": "Ditandai sudah dibaca",
   "history.empty": "Belum ada perubahan",
-
   "error.generic": "Terjadi kesalahan",
   "error.unauthorized": "Kamu harus login dulu",
   "error.forbidden": "Kamu gak punya akses ke ini",
@@ -262,7 +238,6 @@
   "toast.copied": "Tersalin ke clipboard",
   "notification.updated": "Task {title} diupdate oleh {name}",
   "notification.viewHistory": "Lihat riwayat",
-
   "digest.greeting": "Halo! Berikut ringkasan tugas harianmu:",
   "digest.pendingCount": "Total tugas tertunda: {count}",
   "digest.top3Heading": "Top 3 Tugas Prioritas:",
