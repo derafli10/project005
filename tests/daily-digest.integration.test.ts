@@ -275,4 +275,298 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
     expect(log?.deliveryStatus).toBe("FAILED");
     expect(log?.errorMessage).toBeDefined();
   });
+
+  it("implements exponential backoff retry mechanism with max 3 attempts on API failures (Requirement 13.10)", async () => {
+    const userId = seedUser("retry@test.com", true, "12:00", "62812345");
+
+    // Mock fetch to fail first 2 times, succeed on 3rd
+    mockFetch
+      .mockRejectedValueOnce(new Error("Network timeout"))
+      .mockRejectedValueOnce(new Error("Connection refused"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ sid: "SM_SUCCESS" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+
+    // Run delivery with retry logic
+    await DailyDigestService.attemptIdempotentDelivery(userId, NOW);
+
+    // Verify retry mechanism: 3 total attempts (2 failures + 1 success)
+    await vi.runAllTimersAsync();
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+
+    // Verify final status is SENT after successful retry
+    const store = getInMemoryStore();
+    const todayStr = new Date(Date.UTC(2026, 5, 30)).toISOString();
+    const log = store.dailyDigestLogs.get(`${userId}/${todayStr}`);
+    expect(log?.deliveryStatus).toBe("SENT");
+    expect(log?.errorMessage).toBeNull();
+  });
+
+  it("logs permanent failure after maximum 3 retry attempts exhausted (Requirement 13.10)", async () => {
+    const userId = seedUser("permanent-fail@test.com", true, "12:00", "62812345");
+
+    // Mock fetch to fail all 3 attempts
+    mockFetch
+      .mockRejectedValueOnce(new Error("Network error 1"))
+      .mockRejectedValueOnce(new Error("Network error 2"))
+      .mockRejectedValueOnce(new Error("Network error 3"));
+
+    // Expect final failure after retries exhausted
+    await expect(DailyDigestService.attemptIdempotentDelivery(userId, NOW)).rejects.toThrow();
+
+    await vi.runAllTimersAsync();
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+
+    // Verify permanent failure logged
+    const store = getInMemoryStore();
+    const todayStr = new Date(Date.UTC(2026, 5, 30)).toISOString();
+    const log = store.dailyDigestLogs.get(`${userId}/${todayStr}`);
+    expect(log?.deliveryStatus).toBe("FAILED");
+    expect(log?.errorMessage).toContain("Network error");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. Digest Message Generation & Task Filtering (Requirement 13.8)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Task 18.2.3 — Digest message generation with correct task filtering", () => {
+  function seedTask(
+    userId: string,
+    n: number,
+    overrides: {
+      title?: string;
+      taskWeight?: number;
+      sksWeight?: number;
+      isSubTask?: boolean;
+      parentTaskId?: string | null;
+      daysAhead?: number;
+      status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+      createdAt?: Date;
+    } = {}
+  ): string {
+    const store = getInMemoryStore();
+    const taskId = `task_${n}`;
+    const taskWeight = overrides.taskWeight ?? 5000;
+    const sksWeight = overrides.sksWeight ?? 3;
+    const isSubTask = overrides.isSubTask ?? false;
+    const daysAhead = overrides.daysAhead ?? 10;
+    const createdAt = overrides.createdAt ?? NOW;
+
+    store.tasks.set(taskId, {
+      id: taskId,
+      title: overrides.title ?? `Task ${n}`,
+      description: null,
+      sksWeight,
+      taskWeight,
+      deadlineAt: new Date(NOW.getTime() + daysAhead * MS_PER_DAY),
+      isSubTask,
+      parentTaskId: overrides.parentTaskId ?? null,
+      classRoomId: null,
+      creatorId: userId,
+      createdAt,
+      updatedAt: NOW,
+    });
+
+    store.userTaskProgress.set(`${userId}/${taskId}`, {
+      userId,
+      taskId,
+      status: overrides.status ?? "PENDING",
+      position: null,
+      completedAt: overrides.status === "COMPLETED" ? NOW : null,
+      currentStressScore: 0,
+    });
+
+    return taskId;
+  }
+
+  it("includes only parent tasks (excluding subtasks) in the pending count (Requirement 13.8)", async () => {
+    const userId = seedUser("filter@test.com", true, "12:00", null, "123456");
+
+    // Parent task 1
+    const parent1 = seedTask(userId, 1, { title: "Parent Task 1", taskWeight: 5000 });
+    // Subtask under parent 1
+    seedTask(userId, 2, {
+      title: "Subtask 1.1",
+      isSubTask: true,
+      parentTaskId: parent1,
+    });
+    // Parent task 2
+    seedTask(userId, 3, { title: "Parent Task 2", taskWeight: 6000 });
+    // Completed parent (should not count)
+    seedTask(userId, 4, { title: "Completed Task", status: "COMPLETED" });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should count only 2 pending parent tasks (excluding subtasks and completed)
+    expect(message).toContain("Total tugas tertenda: 2");
+    expect(message).toContain("Parent Task 1");
+    expect(message).toContain("Parent Task 2");
+    expect(message).not.toContain("Subtask 1.1");
+    expect(message).not.toContain("Completed Task");
+  });
+
+  it("includes top 3 tasks ranked by JIT priority score (Requirement 13.8)", async () => {
+    const userId = seedUser("priority@test.com", true, "12:00", null, "123456");
+
+    // High priority task (high weight, near deadline)
+    seedTask(userId, 1, { title: "High Priority", taskWeight: 9000, sksWeight: 5, daysAhead: 1 });
+    // Medium priority task
+    seedTask(userId, 2, { title: "Medium Priority", taskWeight: 5000, sksWeight: 3, daysAhead: 5 });
+    // Low priority task (low weight, far deadline)
+    seedTask(userId, 3, { title: "Low Priority", taskWeight: 1000, sksWeight: 1, daysAhead: 10 });
+    // Another medium priority
+    seedTask(userId, 4, { title: "Medium 2", taskWeight: 4000, sksWeight: 3, daysAhead: 3 });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should list top 3 in order (High, Medium 2, Medium)
+    expect(message).toContain("Top 3 Tugas Prioritas:");
+    expect(message).toContain("1. High Priority");
+    // Low priority should not be in top 3
+    expect(message.split("Top 3 Tugas Prioritas:")[1]).not.toContain("Low Priority");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. Recent Changes Detection Module (Requirement 13.9)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("Task 18.2.4 — 'What changed since yesterday?' recent changes detection", () => {
+  function seedTask(
+    userId: string,
+    n: number,
+    overrides: {
+      title?: string;
+      taskWeight?: number;
+      sksWeight?: number;
+      isSubTask?: boolean;
+      daysAhead?: number;
+      createdAt?: Date;
+    } = {}
+  ): string {
+    const store = getInMemoryStore();
+    const taskId = `task_${n}`;
+
+    store.tasks.set(taskId, {
+      id: taskId,
+      title: overrides.title ?? `Task ${n}`,
+      description: null,
+      sksWeight: overrides.sksWeight ?? 3,
+      taskWeight: overrides.taskWeight ?? 5000,
+      deadlineAt: new Date(NOW.getTime() + (overrides.daysAhead ?? 10) * MS_PER_DAY),
+      isSubTask: overrides.isSubTask ?? false,
+      parentTaskId: null,
+      classRoomId: null,
+      creatorId: userId,
+      createdAt: overrides.createdAt ?? NOW,
+      updatedAt: NOW,
+    });
+
+    store.userTaskProgress.set(`${userId}/${taskId}`, {
+      userId,
+      taskId,
+      status: "PENDING",
+      position: null,
+      completedAt: null,
+      currentStressScore: 0,
+    });
+
+    return taskId;
+  }
+
+  it("detects newly added tasks created within the last 24 hours (Requirement 13.9)", async () => {
+    const userId = seedUser("new-tasks@test.com", true, "12:00", null, "123456");
+
+    // Task created 12 hours ago (within 24h)
+    const recentTask = seedTask(userId, 1, {
+      title: "Recent New Task",
+      createdAt: new Date(NOW.getTime() - 12 * 60 * 60 * 1000),
+    });
+
+    // Task created 30 hours ago (outside 24h window)
+    seedTask(userId, 2, {
+      title: "Old Task",
+      createdAt: new Date(NOW.getTime() - 30 * 60 * 60 * 1000),
+    });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should mention the recent task in "What changed since yesterday?"
+    expect(message).toContain("Perubahan sejak kemarin:");
+    expect(message).toContain("Baru ditambahkan:");
+    expect(message).toContain("Recent New Task");
+    // Old task should not appear in recent changes
+    const changesSection = message.split("Perubahan sejak kemarin:")[1];
+    expect(changesSection).not.toContain("Old Task");
+  });
+
+  it("detects deadline shifts tracked via TaskEditLog (Requirement 13.9)", async () => {
+    const userId = seedUser("deadline-change@test.com", true, "12:00", null, "123456");
+
+    const taskId = seedTask(userId, 1, { title: "Deadline Changed Task" });
+
+    // Create edit log for deadline change within last 24 hours
+    const store = getInMemoryStore();
+    const editLogId = `edit_log_${++store.counters.taskEditLog}`;
+    const editedAt = new Date(NOW.getTime() - 10 * 60 * 60 * 1000); // 10 hours ago
+
+    store.taskEditLogs.set(editLogId, {
+      id: editLogId,
+      taskId,
+      editorId: userId,
+      fieldName: "deadlineAt",
+      oldValue: "2026-07-01",
+      newValue: "2026-06-28",
+      editedAt,
+    });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should detect deadline change in recent changes
+    expect(message).toContain("Perubahan deadline:");
+    expect(message).toContain("Deadline Changed Task");
+  });
+
+  it("detects priority escalations with timeUrgency change > 1000 basis points (Requirement 13.9)", async () => {
+    const userId = seedUser("escalation@test.com", true, "12:00", null, "123456");
+
+    // Create a task with deadline in 2 days (will have escalated urgency from yesterday)
+    // 24 hours ago it had ~48 hours remaining, now it has ~24 hours remaining
+    // This should trigger timeUrgency escalation > 1000 basis points
+    seedTask(userId, 1, {
+      title: "Escalating Task",
+      taskWeight: 5000,
+      sksWeight: 3,
+      daysAhead: 2,
+    });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should detect priority escalation in recent changes
+    expect(message).toContain("Eskalasi prioritas:");
+    // Due to time urgency increase as deadline approaches
+    expect(message).toContain("Escalating Task");
+  });
+
+  it("shows empty state when no recent changes detected", async () => {
+    const userId = seedUser("no-changes@test.com", true, "12:00", null, "123456");
+
+    // Only old tasks, no recent changes
+    seedTask(userId, 1, {
+      title: "Old Static Task",
+      createdAt: new Date(NOW.getTime() - 7 * MS_PER_DAY), // 7 days ago
+      daysAhead: 10, // Far deadline, no escalation
+    });
+
+    const message = await DailyDigestService.generateDigestMessage(userId, "ID", NOW);
+
+    // Should show empty states for all change categories
+    expect(message).toContain("Baru ditambahkan: -");
+    expect(message).toContain("Perubahan deadline: -");
+    expect(message).toContain("Eskalasi prioritas: -");
+  });
 });
