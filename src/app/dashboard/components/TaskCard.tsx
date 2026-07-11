@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { GripVertical } from "lucide-react";
 import type {
   DraggableAttributes,
@@ -8,6 +8,7 @@ import type {
 } from "@dnd-kit/core";
 import type { QueueTask } from "@/lib/services/task.service";
 import { TaskEditHistory, type TaskEditHistoryLabels } from "./TaskEditHistory";
+import gsap, { cardHoverConfig, cardHoverResetConfig } from "@/lib/gsap-config";
 
 // ─── Status primitives ──────────────────────────────────────────────────────
 
@@ -194,8 +195,31 @@ export function TaskCard({
   onComplete,
 }: TaskCardProps): React.ReactNode {
   const [unreadCount, setUnreadCount] = React.useState(task.unreadLogsCount);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isSlaBreach = task.timeUrgency >= 10000; // max urgency bucket
   const statusLabel = statusToLabel(task.progress.status, labels);
+
+  // GSAP hover animations (Requirement 14.2, 14.6)
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || dragging) return;
+
+    const handleMouseEnter = () => {
+      gsap.to(card, cardHoverConfig);
+    };
+
+    const handleMouseLeave = () => {
+      gsap.to(card, cardHoverResetConfig);
+    };
+
+    card.addEventListener("mouseenter", handleMouseEnter);
+    card.addEventListener("mouseleave", handleMouseLeave);
+
+    return () => {
+      card.removeEventListener("mouseenter", handleMouseEnter);
+      card.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, [dragging]);
 
   // Compute localized micro-prompt using the template if available
   const microPrompt = React.useMemo(() => {
@@ -220,6 +244,7 @@ export function TaskCard({
 
   return (
     <div
+      ref={cardRef}
       className={
         dragging
           ? "flex flex-col gap-3 rounded-xl bg-white shadow-2xl ring-2 ring-zinc-900/10 dark:bg-zinc-900"

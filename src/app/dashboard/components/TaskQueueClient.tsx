@@ -36,7 +36,7 @@
  *               14.2.4, 14.2.5, 14.2.6, 14.4.11
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -67,6 +67,7 @@ import { reorderQueueAction, reorderTaskAction, completeTaskAction } from "@/app
 import { OverrideModal } from "./OverrideModal";
 import { AcademicComebackModal } from "./AcademicComebackModal";
 import { CreateTaskForm, type ClassroomOption, type CreateTaskFormLabels } from "./CreateTaskForm";
+import gsap, { smoothScrollTo, pageTransitionConfig } from "@/lib/gsap-config";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
@@ -127,6 +128,10 @@ export function TaskQueueClient({
   // Snapshot used for rollback if the Server Action fails (Requirement 14.2.5).
   const rollbackSnapshotRef = useRef<QueueTask[] | null>(null);
 
+  // Ref for smooth scrolling container (Requirement 14.2, 14.6)
+  const queueContainerRef = useRef<HTMLDivElement>(null);
+  const taskListRef = useRef<HTMLOListElement>(null);
+
   // State for collecting manual override reason (Task 10.5).
   const [pendingOverride, setPendingOverride] = useState<{
     taskId: string;
@@ -142,6 +147,18 @@ export function TaskQueueClient({
   // State for Academic Comeback celebration (Task 10.6)
   const [isComebackModalOpen, setIsComebackModalOpen] = useState(false);
   const [celebrationContext, setCelebrationContext] = useState<import("@/lib/services/task.service").CelebrationContext | null>(null);
+
+  // Page transition animation on mount (Requirement 14.2, 14.6)
+  useEffect(() => {
+    if (taskListRef.current) {
+      const cards = taskListRef.current.children;
+      gsap.fromTo(
+        cards,
+        pageTransitionConfig.from,
+        pageTransitionConfig.to,
+      );
+    }
+  }, []);
 
   // Pointer sensor requires a small movement threshold so a plain click never
   // starts a drag (keeps future tap-to-complete interactions intact).
@@ -184,6 +201,8 @@ export function TaskQueueClient({
    * Action, and roll back + toast on failure (Requirements 5.3, 14.2.4,
    * 14.2.5). SubTasks always stay anchored to their parent (Requirement
    * 14.2.6) — only the `parents` array is reordered.
+   * 
+   * Also triggers smooth scroll to the newly positioned task (Requirement 14.2, 14.6).
    */
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -210,6 +229,14 @@ export function TaskQueueClient({
       rollbackSnapshotRef.current = tasks;
       setTasks(nextTasks);
       setReorderError(null);
+
+      // Smooth scroll to the moved task (Requirement 14.2, 14.6)
+      requestAnimationFrame(() => {
+        const movedTaskElement = document.getElementById(`task-card-${active.id}`);
+        if (movedTaskElement && queueContainerRef.current) {
+          smoothScrollTo(queueContainerRef.current, movedTaskElement);
+        }
+      });
 
       // Open the override modal instead of persisting directly
       setPendingOverride({
@@ -296,6 +323,17 @@ export function TaskQueueClient({
         return;
       }
 
+      // Smooth scroll animation to reveal next task after completion (Requirement 14.2, 14.6)
+      requestAnimationFrame(() => {
+        const taskListElement = taskListRef.current;
+        if (taskListElement && queueContainerRef.current && nextTasks.length > 0) {
+          const firstVisibleTask = taskListElement.children[0] as HTMLElement;
+          if (firstVisibleTask) {
+            smoothScrollTo(queueContainerRef.current, firstVisibleTask, 0.5);
+          }
+        }
+      });
+
       // If Academic Comeback is triggered (celebration context exists), show the modal and defer updating Cooked Meter.
       if (result.data?.triggerCelebration && result.data.celebrationContext) {
         setCelebrationContext(result.data.celebrationContext);
@@ -328,7 +366,10 @@ export function TaskQueueClient({
 
   return (
     <LayoutGroup>
-      <div className="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+      <div 
+        ref={queueContainerRef}
+        className="flex h-full flex-col rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 overflow-y-auto"
+      >
         <header className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
             {labels.title}
@@ -363,7 +404,7 @@ export function TaskQueueClient({
             items={parents.map((p) => p.task.id)}
             strategy={verticalListSortingStrategy}
           >
-            <ol className="flex flex-col gap-3" role="list">
+            <ol ref={taskListRef} className="flex flex-col gap-3" role="list">
               {parents.map((task) => {
                 const nested = subtasksByParent.get(task.task.id) ?? [];
                 return (

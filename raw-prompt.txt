@@ -1,21 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [18.7 & 19.]
+Task Number: [20.1]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 18.7 Write integration tests for Daily Digest
-    - Test idempotency: duplicate digest attempts on same day fail
-    - Test digest generation with correct task filtering (Parent Tasks only, deadline ≤ 3 days)
-    - Test recent changes detection (new tasks, deadline shifts, priority escalations)
-    - Test retry logic on external API failure
-    - _Requirements: 13.5, 13.6, 13.8, 13.9, 13.10_
+  - 20.1 Implement GSAP animations for smooth scrolling and hover effects
+    - Install and configure GSAP 3.15.0
+    - Add smooth scroll behavior to task queue
+    - Add hover animations to task cards (scale, shadow)
+    - Add page transition animations
+    - _Requirements: 14.2, 14.6_
 
-
-- 19. Checkpoint - Viral features and automation complete
-  - Ensure all tests pass, ask the user if questions arise.
-
-Context/Notes: [requirements.md 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10]
+Context/Notes: [requirements.md 14.2, 14.6]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
