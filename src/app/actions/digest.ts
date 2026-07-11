@@ -115,3 +115,43 @@ export async function updateDigestSettingsAction(
     },
   };
 }
+
+/**
+ * Verify a Telegram connection by sending a verification message.
+ *
+ * @param telegramChatId The chat ID to test.
+ * @returns Success or error message.
+ */
+export async function verifyTelegramConnectionAction(
+  telegramChatId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new AuthenticationError("You must be signed in to verify Telegram connection");
+  }
+
+  if (!telegramChatId || telegramChatId.trim() === "") {
+    return { success: false, error: "Telegram Chat ID is required" };
+  }
+
+  try {
+    const { DailyDigestService } = await import("@/lib/services/daily-digest.service");
+    // Send a simple verification test message to the user
+    const testResult = await DailyDigestService.sendViaTelegram(
+      telegramChatId.trim(),
+      "✅ Project005: Telegram connection verified successfully!"
+    );
+
+    if (testResult.success) {
+      return { success: true };
+    } else {
+      return { success: false, error: testResult.error || "Failed to deliver message" };
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err.message || "Failed to connect to Telegram. Please make sure you have started a chat with the bot.",
+    };
+  }
+}
+

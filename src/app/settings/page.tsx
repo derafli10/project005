@@ -52,6 +52,7 @@ export default async function SettingsPage() {
             whatsappNumber: user.whatsappNumber,
             telegramChatId: user.telegramChatId,
           }}
+          botUsername={process.env.TELEGRAM_BOT_USERNAME || "Project005DigestBot"}
         />
       </div>
     </main>
