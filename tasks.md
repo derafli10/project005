@@ -685,7 +685,7 @@ This implementation plan translates the design and requirements documents into a
     - Save phone number and Telegram chatId to User record
     - _Requirements: 13.2_
   
-  - [ ]* 18.7 Write integration tests for Daily Digest
+  - [x]* 18.7 Write integration tests for Daily Digest
     - Test idempotency: duplicate digest attempts on same day fail
     - Test digest generation with correct task filtering (Parent Tasks only, deadline ≤ 3 days)
     - Test recent changes detection (new tasks, deadline shifts, priority escalations)
