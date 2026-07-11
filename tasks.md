@@ -672,14 +672,14 @@ This implementation plan translates the design and requirements documents into a
     - Return success/error status
     - _Requirements: 13.10_
   
-  - [ ] 18.5 Configure Telegram Bot API integration
+  - [x] 18.5 Configure Telegram Bot API integration
     - Set up Telegram Bot API token in environment variables
     - Implement DailyDigestService.sendViaTelegram
     - Wrap with exponential backoff retry (max 3 attempts)
     - Return success/error status
     - _Requirements: 13.10_
   
-  - [ ] 18.6 Add user phone/chatId linking UI
+  - [x] 18.6 Add user phone/chatId linking UI
     - Extend settings page with WhatsApp phone number input field
     - Add Telegram chat linking flow (display bot username, verify connection)
     - Save phone number and Telegram chatId to User record
