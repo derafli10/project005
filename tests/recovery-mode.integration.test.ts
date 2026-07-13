@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 
 import { resetInMemoryDb, getInMemoryStore } from "./helpers/store";
@@ -149,6 +149,12 @@ import { CookedMeterService } from "@/lib/services/cooked-meter.service";
 beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // ─── Test helpers ───────────────────────────────────────────────────────────

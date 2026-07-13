@@ -198,7 +198,7 @@ function seedTask(
   const deadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const task: Task = {
     id,
-    title: fc.sample(titleArb, 1)[0]!,
+    title: overrides?.title !== undefined ? overrides.title.trim() : fc.sample(titleArb, 1)[0]!.trim(),
     description: null,
     sksWeight: 3,
     taskWeight: 5000,
@@ -211,6 +211,10 @@ function seedTask(
     updatedAt: now,
     ...overrides,
   };
+  // Ensure the override title is stored trimmed if it was present
+  if (overrides?.title !== undefined) {
+    task.title = overrides.title.trim();
+  }
   store.tasks.set(id, task);
   return task;
 }
