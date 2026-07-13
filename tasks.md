@@ -705,7 +705,7 @@ This implementation plan translates the design and requirements documents into a
     - Add page transition animations
     - _Requirements: 14.2, 14.6_
   
-  - [ ] 20.2 Implement Framer Motion micro-animations
+  - [x] 20.2 Implement Framer Motion micro-animations
     - Add entrance animations to modals and dialogs
     - Add exit animations with fade/scale effects
     - Add stagger animations to task list rendering
