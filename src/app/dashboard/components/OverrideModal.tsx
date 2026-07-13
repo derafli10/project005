@@ -2,6 +2,11 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  backdropVariants,
+  bottomSheetVariants,
+  MODAL_SPRING,
+} from "@/lib/motion-variants";
 
 export interface OverrideModalLabels {
   overrideTitle: string;
@@ -70,19 +75,21 @@ export function OverrideModal({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             onClick={onCancel}
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
           {/* Bottom Sheet */}
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            variants={bottomSheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={MODAL_SPRING}
             className="fixed inset-x-0 bottom-0 z-50 flex max-h-[90vh] flex-col rounded-t-3xl border-t border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 sm:mx-auto sm:max-w-lg"
           >
             {/* Drag Handle Indicator */}

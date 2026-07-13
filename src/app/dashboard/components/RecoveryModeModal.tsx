@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ShieldAlert, Sparkles, X, Calendar } from "lucide-react";
+import {
+  modalPanelVariants,
+  backdropVariants,
+  MODAL_SPRING,
+  staggerContainerVariants,
+  staggerItemVariants,
+} from "@/lib/motion-variants";
 
 import {
   getRecoveryCandidatesAction,
@@ -94,19 +101,21 @@ export function RecoveryModeModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             onClick={onClose}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
 
           {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.4 }}
+            variants={modalPanelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={MODAL_SPRING}
             className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
           >
             {/* Close Button */}
@@ -205,11 +214,16 @@ export function RecoveryModeModal({
                       <div className="h-10 w-full animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />
                     </div>
                   ) : candidates.length > 0 ? (
-                    <ul className="space-y-2">
+                    <motion.ul
+                      className="space-y-2"
+                      variants={staggerContainerVariants}
+                      initial="hidden"
+                      animate="visible"
+                    >
                       {candidates.map((task) => {
                         const isChecked = selectedIds.includes(task.id);
                         return (
-                          <li key={task.id}>
+                          <motion.li key={task.id} variants={staggerItemVariants}>
                             <button
                               type="button"
                               onClick={() => handleToggle(task.id)}
@@ -237,10 +251,10 @@ export function RecoveryModeModal({
                                 SKS {task.sksWeight} • {(task.taskWeight / 100).toFixed(0)}%
                               </span>
                             </button>
-                          </li>
+                          </motion.li>
                         );
                       })}
-                    </ul>
+                    </motion.ul>
                   ) : (
                     <div className="py-4 text-center text-xs text-zinc-400">
                       No candidate tasks over threshold

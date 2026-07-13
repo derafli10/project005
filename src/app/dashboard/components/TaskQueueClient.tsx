@@ -67,7 +67,15 @@ import { reorderQueueAction, reorderTaskAction, completeTaskAction } from "@/app
 import { OverrideModal } from "./OverrideModal";
 import { AcademicComebackModal } from "./AcademicComebackModal";
 import { CreateTaskForm, type ClassroomOption, type CreateTaskFormLabels } from "./CreateTaskForm";
-import gsap, { smoothScrollTo, pageTransitionConfig } from "@/lib/gsap-config";
+import { smoothScrollTo } from "@/lib/gsap-config";
+import {
+  staggerContainerVariants,
+  staggerItemVariants,
+  toastVariants,
+  modalPanelVariants,
+  backdropVariants,
+  MODAL_SPRING,
+} from "@/lib/motion-variants";
 
 // ─── Labels (pre-localized server-side) ─────────────────────────────────────
 
@@ -148,17 +156,8 @@ export function TaskQueueClient({
   const [isComebackModalOpen, setIsComebackModalOpen] = useState(false);
   const [celebrationContext, setCelebrationContext] = useState<import("@/lib/services/task.service").CelebrationContext | null>(null);
 
-  // Page transition animation on mount (Requirement 14.2, 14.6)
-  useEffect(() => {
-    if (taskListRef.current) {
-      const cards = taskListRef.current.children;
-      gsap.fromTo(
-        cards,
-        pageTransitionConfig.from,
-        pageTransitionConfig.to,
-      );
-    }
-  }, []);
+  // Mount stagger now handled by Framer Motion staggerContainerVariants +
+  // staggerItemVariants on the <motion.ol> below (Requirement 14.2, 14.6).
 
   // Pointer sensor requires a small movement threshold so a plain click never
   // starts a drag (keeps future tap-to-complete interactions intact).
@@ -404,7 +403,14 @@ export function TaskQueueClient({
             items={parents.map((p) => p.task.id)}
             strategy={verticalListSortingStrategy}
           >
-            <ol ref={taskListRef} className="flex flex-col gap-3" role="list">
+            <motion.ol
+              ref={taskListRef}
+              className="flex flex-col gap-3"
+              role="list"
+              variants={staggerContainerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {parents.map((task) => {
                 const nested = subtasksByParent.get(task.task.id) ?? [];
                 return (
@@ -418,7 +424,7 @@ export function TaskQueueClient({
                   />
                 );
               })}
-            </ol>
+            </motion.ol>
           </SortableContext>
 
           {/* Elevated-shadow visual feedback while dragging (Requirement 5.2). */}
@@ -508,6 +514,7 @@ function SortableTaskCard({
       ref={setNodeRef}
       style={style}
       layout
+      variants={staggerItemVariants}
       // Micro-animation capped under 300ms (Requirement 14.4.11).
       transition={{ type: "spring", stiffness: 500, damping: 40, duration: 0.25 }}
       role="listitem"
@@ -545,9 +552,10 @@ function ReorderErrorToast({
     <motion.div
       role="alert"
       aria-live="assertive"
-      initial={{ opacity: 0, y: 24, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 24, scale: 0.96 }}
+      variants={toastVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
       transition={{ duration: 0.2, ease: "easeOut" }}
       className="fixed inset-x-0 bottom-4 z-50 mx-auto w-fit max-w-[calc(100vw-2rem)]"
     >
@@ -644,27 +652,30 @@ function CreateTaskModal({
         <motion.div
           key="create-task-modal"
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
           transition={{ duration: 0.18 }}
         >
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           />
 
           {/* Panel */}
           <motion.div
             className="relative z-10 w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
-            initial={{ opacity: 0, scale: 0.95, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 16 }}
-            transition={{ type: "spring", stiffness: 500, damping: 35, duration: 0.25 }}
+            variants={modalPanelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={MODAL_SPRING}
           >
             <button
               type="button"

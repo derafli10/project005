@@ -1,19 +1,41 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { LocaleProvider } from "@/i18n/LocaleProvider";
 import { getLocaleWithDictionary } from "@/i18n/server";
 import { LOCALE_TO_BCP47 } from "@/i18n/config";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/**
+ * Inter — body text, labels, UI chrome.
+ * High x-height for small sizes; tabular figures for score/date columns.
+ * Task 20.3: Typography scale using Inter.
+ */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
+/**
+ * Poppins — display headings, hero text, widget titles.
+ * Geometric humanist that balances Gen-Z energy with academic readability.
+ * Task 20.3: Typography scale using Poppins.
+ */
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+/**
+ * Geist Mono — code, debugging displays.
+ */
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -33,7 +55,7 @@ export default async function RootLayout({
   return (
     <html
       lang={htmlLang}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${poppins.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <LocaleProvider locale={locale} dictionary={dictionary}>
@@ -43,3 +65,4 @@ export default async function RootLayout({
     </html>
   );
 }
+

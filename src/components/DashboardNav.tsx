@@ -36,7 +36,7 @@ export function DashboardNav({
         <div className="flex items-center gap-6">
           <Link
             href="/dashboard"
-            className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+            className="text-sm font-semibold tracking-tight font-display text-zinc-900 dark:text-zinc-50"
           >
             {appName}
           </Link>
