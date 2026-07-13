@@ -44,6 +44,9 @@ export const metadata: Metadata = {
     "Academic task management system with Decision Support System (DSS) capabilities for Gen Z students.",
 };
 
+import { ToastProvider } from "@/components/ToastProvider";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -59,7 +62,11 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <LocaleProvider locale={locale} dictionary={dictionary}>
-          {children}
+          <ToastProvider>
+            <GlobalErrorBoundary>
+              {children}
+            </GlobalErrorBoundary>
+          </ToastProvider>
         </LocaleProvider>
       </body>
     </html>

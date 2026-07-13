@@ -37,6 +37,9 @@ import { WrappedWidget } from "./components/WrappedWidget";
  *
  * Requirements: 14.1, 2.5, 1.8
  */
+import { Suspense } from "react";
+import { TaskQueueSkeleton, CookedMeterSkeleton, WidgetSkeleton } from "@/components/Skeletons";
+
 export default async function DashboardLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
@@ -90,50 +93,58 @@ export default async function DashboardLayout({
             aria-label={t("dashboard.widget.taskQueue")}
             className="md:col-span-2 xl:col-span-2 xl:row-span-2 xl:row-start-1"
           >
-            {children}
+            <Suspense fallback={<TaskQueueSkeleton count={3} />}>
+              {children}
+            </Suspense>
           </section>
 
           {/* Widget B — Cooked Meter (Task 11). */}
-          <CookedMeter
-            initialState={cookedMeterState}
-            labels={{
-              title: t("cooked.meter.title"),
-              currentScore: t("cooked.meter.currentScore"),
-              sparkline: t("cooked.meter.sparkline"),
-              updatedNow: t("cooked.meter.updatedNow"),
-              tierMainCharacter: t("cooked.tier.main_character"),
-              tierLetHimCook: t("cooked.tier.let_him_cook"),
-              tierSlightlyCooked: t("cooked.tier.slightly_cooked"),
-              tierOvercooked: t("cooked.tier.overcooked"),
-              locale,
-              recoveryTitle: t("recovery.modal.title"),
-              recoveryMessage: t("recovery.modal.message"),
-              recoveryActivate: t("recovery.modal.activate"),
-              recoveryLater: t("recovery.modal.later"),
-              recoveryCandidates: t("recovery.modal.candidates"),
-              recoveryActivatedTitle: t("recovery.activated"),
-              cancel: t("common.cancel"),
-            }}
-          />
+          <Suspense fallback={<CookedMeterSkeleton />}>
+            <CookedMeter
+              initialState={cookedMeterState}
+              labels={{
+                title: t("cooked.meter.title"),
+                currentScore: t("cooked.meter.currentScore"),
+                sparkline: t("cooked.meter.sparkline"),
+                updatedNow: t("cooked.meter.updatedNow"),
+                tierMainCharacter: t("cooked.tier.main_character"),
+                tierLetHimCook: t("cooked.tier.let_him_cook"),
+                tierSlightlyCooked: t("cooked.tier.slightly_cooked"),
+                tierOvercooked: t("cooked.tier.overcooked"),
+                locale,
+                recoveryTitle: t("recovery.modal.title"),
+                recoveryMessage: t("recovery.modal.message"),
+                recoveryActivate: t("recovery.modal.activate"),
+                recoveryLater: t("recovery.modal.later"),
+                recoveryCandidates: t("recovery.modal.candidates"),
+                recoveryActivatedTitle: t("recovery.activated"),
+                cancel: t("common.cancel"),
+              }}
+            />
+          </Suspense>
 
           {/* Widget C — Classroom Feed (Task 15). */}
-          <WidgetPlaceholder
-            label={t("dashboard.widget.feed")}
-            ariaLabel={t("feed.title")}
-          />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <WidgetPlaceholder
+              label={t("dashboard.widget.feed")}
+              ariaLabel={t("feed.title")}
+            />
+          </Suspense>
 
           {/* Widget D — Academic Wrapped (Task 17). */}
-          <WrappedWidget
-            label={t("dashboard.widget.wrapped")}
-            ariaLabel={t("wrapped.title")}
-            viewAllLabel={t("wrapped.title")}
-            userId={session.user.id}
-            locale={locale}
-            weekRangeTemplate={t("wrapped.weekRange")}
-            savedCreditsLabel={t("wrapped.savedCredits")}
-            tasksCompletedLabel={t("wrapped.tasksCompleted")}
-            emptyMessage={t("wrapped.empty.message")}
-          />
+          <Suspense fallback={<WidgetSkeleton />}>
+            <WrappedWidget
+              label={t("dashboard.widget.wrapped")}
+              ariaLabel={t("wrapped.title")}
+              viewAllLabel={t("wrapped.title")}
+              userId={session.user.id}
+              locale={locale}
+              weekRangeTemplate={t("wrapped.weekRange")}
+              savedCreditsLabel={t("wrapped.savedCredits")}
+              tasksCompletedLabel={t("wrapped.tasksCompleted")}
+              emptyMessage={t("wrapped.empty.message")}
+            />
+          </Suspense>
         </div>
       </main>
     </div>

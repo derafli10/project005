@@ -1,23 +1,22 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [20.2 & 20.3]
+Task Number: [20.4 & 20.5]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 20.2 Implement Framer Motion micro-animations
-    - Add entrance animations to modals and dialogs
-    - Add exit animations with fade/scale effects
-    - Add stagger animations to task list rendering
-    - Add loading skeleton animations
-    - _Requirements: 5.2, 14.2_
+  - 20.4 Implement error boundaries and loading states
+    - Create global error boundary component
+    - Add suspense boundaries with loading skeletons
+    - Create toast notification system for errors/success messages
+    - Add retry buttons for failed operations
+    - _Requirements: Design: Error Handling_
   
-  - 20.3 Apply Tailwind CSS 4 design system
-    - Configure custom color palette for tier colors (pastel green, yellow, orange, red)
-    - Set up typography scale using Inter/Poppins fonts
-    - Apply responsive breakpoints for mobile/tablet/desktop
-    - _Requirements: 14.1_
-
-Context/Notes: [requirements.md 5.2, 14.1, 14.2]
+  - 20.5 Write visual regression tests
+    - Test component rendering across breakpoints
+    - Test animation states (before, during, after)
+    - Test color contrast for accessibility
+    - _Requirements: 14.1, 14.2_
+Context/Notes: [requirements.md 14.1, 14.2, design.md Error Handling]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
