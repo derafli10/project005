@@ -2,6 +2,7 @@ import { PrismaClient } from "@/generated/prisma";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { AsyncLocalStorage } from "async_hooks";
+import { MonitoringService } from "./monitoring";
 import ws from "ws";
 
 // WebSocket Integration: Evaluate only in server environments
@@ -43,6 +44,10 @@ function createPrismaClient() {
   // UserTaskProgress rows for many users at once — Requirement 8.7).
   return baseClient.$extends({
     query: {
+      $allOperations: async ({ model, operation, args, query }) => {
+        const operationName = model ? `Prisma.${model}.${operation}` : `Prisma.${operation}`;
+        return MonitoringService.monitorPerformance(operationName, () => query(args), 100);
+      },
       task: {
         async $allOperations({ operation, args, query }: { operation: string; args: any; query: (args: any) => any }) {
           const context = userContextStore.getStore();

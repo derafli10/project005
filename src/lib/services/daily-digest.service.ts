@@ -5,6 +5,7 @@ import { PriorityEngineService, type PrioritizableTask } from "./priority-engine
 import { DeliveryStatus, DigestChannel, type User, type Task, type Locale } from "@/generated/prisma";
 import { ExternalServiceError, ValidationError } from "@/lib/errors/domain-errors";
 import { getTranslation } from "@/i18n/utils";
+import { MonitoringService } from "@/lib/monitoring";
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -315,7 +316,9 @@ export class DailyDigestService {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new ExternalServiceError("WhatsApp", `Twilio failed with status ${response.status}: ${text}`);
+      const err = new ExternalServiceError("WhatsApp", `Twilio failed with status ${response.status}: ${text}`);
+      MonitoringService.logExternalApiFailure("Twilio", "sendMessage", err, { to, status: response.status });
+      throw err;
     }
 
     const data = (await response.json()) as { sid?: string };
@@ -353,12 +356,16 @@ export class DailyDigestService {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new ExternalServiceError("WhatsApp", `Fonnte failed with status ${response.status}: ${text}`);
+      const err = new ExternalServiceError("WhatsApp", `Fonnte failed with status ${response.status}: ${text}`);
+      MonitoringService.logExternalApiFailure("Fonnte", "sendMessage", err, { to, status: response.status });
+      throw err;
     }
 
     const data = (await response.json()) as { id?: string; status?: boolean };
     if (data.status === false) {
-      throw new ExternalServiceError("WhatsApp", "Fonnte returned failure status");
+      const err = new ExternalServiceError("WhatsApp", "Fonnte returned failure status");
+      MonitoringService.logExternalApiFailure("Fonnte", "sendMessage", err, { to, response: data });
+      throw err;
     }
 
     return {
@@ -399,7 +406,9 @@ export class DailyDigestService {
 
       if (!response.ok) {
         const text = await response.text();
-        throw new ExternalServiceError("Telegram", `Telegram failed with status ${response.status}: ${text}`);
+        const err = new ExternalServiceError("Telegram", `Telegram failed with status ${response.status}: ${text}`);
+        MonitoringService.logExternalApiFailure("Telegram", "sendMessage", err, { chatId, status: response.status });
+        throw err;
       }
 
       const data = (await response.json()) as { result?: { message_id?: number } };
@@ -483,6 +492,10 @@ export class DailyDigestService {
     } catch (err: unknown) {
       // Step 5: Failure log update
       const msg = err instanceof Error ? err.message : String(err);
+      MonitoringService.captureException(err, {
+        tags: { flow: "idempotent-digest-delivery" },
+        extra: { userId, logId },
+      });
       await baseDb.dailyDigestLog.update({
         where: { id: logId },
         data: {

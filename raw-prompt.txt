@@ -1,22 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [21.1]
+Task Number: [21.4]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 21.1 Optimize database queries with indexes
-    - Verify all Prisma indexes are created: classRoomId, creatorId, deadlineAt, parentTaskId
-    - Add composite indexes for common query patterns: [userId, status], [userId, digestDate]
-    - Run EXPLAIN ANALYZE on critical queries (task queue, cooked meter calculation)
-    - _Requirements: Design: Data Models_
-  - 21.2 Implement caching strategy
-    - Add React Server Component caching for static data (classroom lists)
-    - Implement SWR or React Query for client-side data fetching
-    - Cache JIT priority calculations for 1 minute to reduce CPU load
-    - Cache Academic Wrapped cards in CDN with long TTL
-    - _Requirements: Performance_
+  - 21.4 Set up monitoring and error tracking
+    - Integrate Sentry or similar error tracking service
+    - Add custom error logging for external API failures
+    - Set up performance monitoring for slow queries
+    - Add uptime monitoring for cron jobs
+    - _Requirements: Design: Error Handling_
 
-Context/Notes: [design.md Data Models]
+Context/Notes: [design.md Error Handling]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

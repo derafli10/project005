@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { baseDb } from "@/lib/db";
 import { inngest } from "@/lib/inngest";
 import { DailyDigestService } from "@/lib/services/daily-digest.service";
+import { MonitoringService } from "@/lib/monitoring";
 
 /**
  * Scheduled Cron Endpoint: GET /api/webhooks/cron
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     const nowStr = now.toISOString();
 
     if (cronType === "digest") {
+      MonitoringService.logCronHeartbeat("digest", "started");
       // 1. Fetch users who have daily digest enabled
       const users = await baseDb.user.findMany({
         where: { digestEnabled: true },
@@ -72,6 +74,7 @@ export async function GET(request: Request) {
         }
       );
     } else {
+      MonitoringService.logCronHeartbeat("wrapped", "started");
       // Default: Weekly Wrapped cron job
       const users = await baseDb.user.findMany({
         select: { id: true },
@@ -89,6 +92,8 @@ export async function GET(request: Request) {
         await inngest.send(events);
       }
 
+      MonitoringService.logCronHeartbeat("wrapped", "success", { dispatchedCount: users.length });
+
       return new NextResponse(
         JSON.stringify({
           success: true,
@@ -102,6 +107,11 @@ export async function GET(request: Request) {
       );
     }
   } catch (error: any) {
+    const { searchParams } = new URL(request.url);
+    const cronType = searchParams.get("type") || "wrapped";
+    MonitoringService.logCronHeartbeat(cronType, "failed", { error: error.message });
+    MonitoringService.captureException(error, { tags: { job: "cron", type: cronType } });
+
     console.error("[Cron Webhook Error]", error);
     return new NextResponse(
       JSON.stringify({
