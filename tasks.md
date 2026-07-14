@@ -733,7 +733,7 @@ This implementation plan translates the design and requirements documents into a
 
 
 - [ ] 21. Performance optimization and production readiness
-  - [ ] 21.1 Optimize database queries with indexes
+  - [x] 21.1 Optimize database queries with indexes
     - Verify all Prisma indexes are created: classRoomId, creatorId, deadlineAt, parentTaskId
     - Add composite indexes for common query patterns: [userId, status], [userId, digestDate]
     - Run EXPLAIN ANALYZE on critical queries (task queue, cooked meter calculation)
