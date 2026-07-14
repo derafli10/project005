@@ -754,7 +754,7 @@ This implementation plan translates the design and requirements documents into a
     - Set up encryption keys for AnonymousPost authorId (store private key in HSM/vault)
     - _Requirements: 1.5, 10.6, 11.7, 13.2_
   
-  - [ ] 21.4 Set up monitoring and error tracking
+  - [x] 21.4 Set up monitoring and error tracking
     - Integrate Sentry or similar error tracking service
     - Add custom error logging for external API failures
     - Set up performance monitoring for slow queries
