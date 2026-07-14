@@ -195,6 +195,7 @@ model UserTaskProgress {
   @@id([userId, taskId])
   @@index([userId])
   @@index([taskId])
+  @@index([userId, status])
 }
 
 model TaskOverride {
@@ -209,6 +210,7 @@ model TaskOverride {
 
   @@index([userId])
   @@index([taskId])
+  @@index([overriddenAt])
 }
 
 model TaskEditLog {
@@ -240,6 +242,7 @@ model TaskEditLogRead {
   @@id([logId, userId])
   @@index([logId])
   @@index([userId])
+  @@index([userId, isRead])
 }
 
 model CookedScore {
@@ -267,6 +270,8 @@ model AnonymousPost {
   classRoom ClassRoom @relation(fields: [classRoomId], references: [id], onDelete: Cascade)
 
   @@index([classRoomId])
+  @@index([classRoomId, tag])
+  @@index([classRoomId, createdAt])
 }
 
 model DailyDigestLog {
@@ -281,6 +286,7 @@ model DailyDigestLog {
 
   @@unique([userId, digestDate])
   @@index([userId])
+  @@index([userId, digestDate])
 }
 
 model AcademicWrapped {

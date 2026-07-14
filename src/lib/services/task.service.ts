@@ -18,6 +18,7 @@ import type {
   CookedTier,
   Prisma,
 } from "@/generated/prisma";
+import { invalidateCookedScoreCache } from "./cooked-meter.service";
 
 /**
  * Task Service
@@ -713,6 +714,9 @@ export class TaskService {
     });
 
     const task = await baseDb.task.findUniqueOrThrow({ where: { id: taskId } });
+
+    // Invalidate cooked score cache after status change (Task 21.2).
+    invalidateCookedScoreCache(userId);
 
     // Auto-complete parent if all subtasks are done (Requirement 7.9).
     if (task.isSubTask && task.parentTaskId) {

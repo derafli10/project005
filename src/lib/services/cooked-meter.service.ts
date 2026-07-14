@@ -6,6 +6,7 @@ import {
   type PrioritizableTask,
 } from "./priority-engine.service";
 import { determineCookedTier } from "./task.service";
+import { TTLCache } from "@/lib/cache/ttl-cache";
 import type { CookedScore, CookedTier } from "@/generated/prisma";
 
 /**
@@ -40,6 +41,16 @@ const UPCOMING_WINDOW_DAYS = 7;
 
 /** Number of days of sparkline history to fetch. */
 const SPARKLINE_HISTORY_DAYS = 7;
+
+/**
+ * In-memory TTL cache for cumulative score calculations.
+ * 60-second TTL reduces CPU load from redundant JIT priority computations
+ * when the dashboard makes multiple calls in rapid succession
+ * (e.g., getMeterState + shouldOfferRecoveryMode).
+ *
+ * Task 21.2: Cache JIT priority calculations for 1 minute to reduce CPU load.
+ */
+const cumulativeScoreCache = new TTLCache<number>(60_000, 500);
 
 /** Shape returned by {@link CookedMeterService.getSparklineData}. */
 export interface SparklineDataPoint {
@@ -77,6 +88,13 @@ export class CookedMeterService {
     userId: string,
     now: Date = new Date()
   ): Promise<number> {
+    // Check TTL cache first (Task 21.2).
+    const cacheKey = `cooked:${userId}`;
+    const cached = cumulativeScoreCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     // 1. Calculate the 7-day deadline window.
     const windowEnd = new Date(now.getTime() + UPCOMING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
@@ -117,6 +135,7 @@ export class CookedMeterService {
 
     // 4. If there are no qualifying tasks, score is 0.
     if (parentTasks.length === 0) {
+      cumulativeScoreCache.set(cacheKey, 0);
       return 0;
     }
 
@@ -124,7 +143,12 @@ export class CookedMeterService {
     const scored = PriorityEngineService.batchCalculate(parentTasks, now);
 
     // 6. Sum all priority scores (cumulative — can exceed 10000).
-    return scored.reduce((sum, entry) => sum + entry.priorityScore, 0);
+    const score = scored.reduce((sum, entry) => sum + entry.priorityScore, 0);
+
+    // Cache the result for 60 seconds (Task 21.2).
+    cumulativeScoreCache.set(cacheKey, score);
+
+    return score;
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -219,7 +243,7 @@ export class CookedMeterService {
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     // 4. Upsert — create if not exists, update if today's record already exists.
-    return baseDb.cookedScore.upsert({
+    const result = await baseDb.cookedScore.upsert({
       where: {
         userId_date: { userId, date: today },
       },
@@ -234,6 +258,11 @@ export class CookedMeterService {
         tier,
       },
     });
+
+    // Invalidate the cache after saving (score was freshly computed).
+    cumulativeScoreCache.invalidate(`cooked:${userId}`);
+
+    return result;
   }
 
   // ───────────────────────────────────────────────────────────────────────
@@ -291,3 +320,12 @@ export class CookedMeterService {
 
 /** Default singleton for ergonomic imports. */
 export const cookedMeterService = CookedMeterService;
+
+/**
+ * Invalidate the cached cumulative score for a user.
+ * Call this after task completion, status changes, or any mutation that
+ * affects the user's stress score (e.g., from TaskService.completeTask).
+ */
+export function invalidateCookedScoreCache(userId: string): void {
+  cumulativeScoreCache.invalidate(`cooked:${userId}`);
+}

@@ -1,22 +1,22 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [20.4 & 20.5]
+Task Number: [21.1]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 20.4 Implement error boundaries and loading states
-    - Create global error boundary component
-    - Add suspense boundaries with loading skeletons
-    - Create toast notification system for errors/success messages
-    - Add retry buttons for failed operations
-    - _Requirements: Design: Error Handling_
-  
-  - 20.5 Write visual regression tests
-    - Test component rendering across breakpoints
-    - Test animation states (before, during, after)
-    - Test color contrast for accessibility
-    - _Requirements: 14.1, 14.2_
-Context/Notes: [requirements.md 14.1, 14.2, design.md Error Handling]
+  - 21.1 Optimize database queries with indexes
+    - Verify all Prisma indexes are created: classRoomId, creatorId, deadlineAt, parentTaskId
+    - Add composite indexes for common query patterns: [userId, status], [userId, digestDate]
+    - Run EXPLAIN ANALYZE on critical queries (task queue, cooked meter calculation)
+    - _Requirements: Design: Data Models_
+  - 21.2 Implement caching strategy
+    - Add React Server Component caching for static data (classroom lists)
+    - Implement SWR or React Query for client-side data fetching
+    - Cache JIT priority calculations for 1 minute to reduce CPU load
+    - Cache Academic Wrapped cards in CDN with long TTL
+    - _Requirements: Performance_
+
+Context/Notes: [design.md Data Models]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
