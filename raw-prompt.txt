@@ -1,18 +1,17 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [21.3]
+Task Number: [21.5]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 21.3 Configure production environment variables
-    - Set up Neon PostgreSQL production connection string
-    - Configure Auth.js secret and callback URLs
-    - ConfigureTelegram API credentials
-    - Configure CDN upload credentials (Vercel Blob/Cloudinary)
-    - Set up encryption keys for AnonymousPost authorId (store private key in HSM/vault)
-    - _Requirements: 1.5, 10.6, 11.7, 13.2_
+  - 21.5 Write performance tests
+    - Test task queue rendering with 1000+ tasks
+    - Test JIT priority calculation performance
+    - Test database query performance with large datasets
+    - Test concurrent user operations (optimistic UI, race conditions)
+    - _Requirements: Performance_
 
-Context/Notes: [requirements.md 1.5, 10.6, 11.7, 13.2]
+Context/Notes: [PERFORMANCE]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 
