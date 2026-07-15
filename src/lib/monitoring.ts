@@ -28,7 +28,7 @@ export class MonitoringService {
     });
   }
 
-  /** Specific log handler for external API communication failures (e.g., Twilio, Telegram, CDN) */
+  /** Specific log handler for external API communication failures (e.g., Resend, Telegram, CDN) */
   static logExternalApiFailure(
     service: string,
     action: string,

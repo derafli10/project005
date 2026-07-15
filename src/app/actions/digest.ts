@@ -6,8 +6,7 @@
  * Persists the user's Daily Digest preferences including:
  * - digestEnabled: whether to receive daily digests
  * - digestTime: preferred time in HH:MM format (e.g., "21:00", "06:30")
- * - deliveryChannel: WHATSAPP or TELEGRAM
- * - whatsappNumber: required if deliveryChannel is WHATSAPP
+ * - deliveryChannel: EMAIL or TELEGRAM
  * - telegramChatId: required if deliveryChannel is TELEGRAM
  *
  * Requirements: 13.1, 13.2
@@ -23,7 +22,6 @@ export interface DigestSettings {
   digestEnabled: boolean;
   digestTime: string | null;
   deliveryChannel: DigestChannel;
-  whatsappNumber: string | null;
   telegramChatId: string | null;
 }
 
@@ -68,12 +66,8 @@ export async function updateDigestSettingsAction(
     }
 
     // Validate delivery channel and contact info
-    if (settings.deliveryChannel === DigestChannel.WHATSAPP) {
-      if (!settings.whatsappNumber || settings.whatsappNumber.trim() === "") {
-        throw new ValidationError("WhatsApp number is required for WhatsApp delivery", {
-          field: "whatsappNumber",
-        });
-      }
+    if (settings.deliveryChannel === DigestChannel.EMAIL) {
+      // Email uses the user's registered email address — no extra input needed.
     } else if (settings.deliveryChannel === DigestChannel.TELEGRAM) {
       if (!settings.telegramChatId || settings.telegramChatId.trim() === "") {
         throw new ValidationError("Telegram chat ID is required for Telegram delivery", {
@@ -92,14 +86,12 @@ export async function updateDigestSettingsAction(
       digestEnabled: settings.digestEnabled,
       digestTime: settings.digestEnabled ? settings.digestTime : null,
       deliveryChannel: settings.deliveryChannel,
-      whatsappNumber: settings.whatsappNumber?.trim() || null,
       telegramChatId: settings.telegramChatId?.trim() || null,
     },
     select: {
       digestEnabled: true,
       digestTime: true,
       deliveryChannel: true,
-      whatsappNumber: true,
       telegramChatId: true,
     },
   });
@@ -110,7 +102,6 @@ export async function updateDigestSettingsAction(
       digestEnabled: updatedUser.digestEnabled,
       digestTime: updatedUser.digestTime,
       deliveryChannel: updatedUser.deliveryChannel,
-      whatsappNumber: updatedUser.whatsappNumber,
       telegramChatId: updatedUser.telegramChatId,
     },
   };
@@ -154,4 +145,3 @@ export async function verifyTelegramConnectionAction(
     };
   }
 }
-

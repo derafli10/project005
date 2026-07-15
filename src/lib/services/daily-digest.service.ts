@@ -7,10 +7,8 @@ import { ExternalServiceError, ValidationError } from "@/lib/errors/domain-error
 import { getTranslation } from "@/i18n/utils";
 import { MonitoringService } from "@/lib/monitoring";
 
-// ─── TYPES ──────────────────────────────────────────────────────────────────
-
-/** Result shape for WhatsApp API calls. */
-export interface WhatsAppSendResult {
+/** Result shape for Email (Resend) API calls. */
+export interface EmailSendResult {
   success: boolean;
   messageId?: string;
   error?: string;
@@ -256,123 +254,67 @@ export class DailyDigestService {
   }
 
   /**
-   * Send digest via WhatsApp Business API.
+   * Send digest via Email using Resend API.
    *
-   * Uses Twilio as primary provider, with Fonnte as a configurable alternative.
+   * Resend free tier: 3,000 emails/month, 100/day — ideal for academic digest delivery.
    * Wrapped with exponential backoff retry (max 3 attempts).
    *
    * Environment variables:
-   * - WHATSAPP_PROVIDER: "twilio" | "fonnte" (default: "twilio")
-   * - TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
-   * - FONNTE_API_TOKEN
+   * - RESEND_API_KEY: API key from https://resend.com
+   * - RESEND_FROM_EMAIL: Sender address (default: "Project005 <digest@project005.app>")
    *
    * Requirements: 13.10
    *
-   * @returns WhatsAppSendResult with success/error status
+   * @param to - Recipient email address
+   * @param subject - Email subject line
+   * @param message - Plain-text email body
+   * @returns EmailSendResult with success/error status
    */
-  static async sendViaWhatsApp(to: string, message: string): Promise<WhatsAppSendResult> {
+  static async sendViaEmail(to: string, subject: string, message: string): Promise<EmailSendResult> {
     if (!to) {
-      throw new ValidationError("WhatsApp number is required");
+      throw new ValidationError("Recipient email address is required");
     }
 
-    const provider = (process.env.WHATSAPP_PROVIDER ?? "twilio").toLowerCase();
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new ExternalServiceError(
+        "Email",
+        "Resend credentials not configured. Set RESEND_API_KEY env variable."
+      );
+    }
 
-    return withRetry<WhatsAppSendResult>(async () => {
-      if (provider === "fonnte") {
-        return this._sendViaFonnte(to, message);
+    const from = process.env.RESEND_FROM_EMAIL || "Project005 <onboarding@resend.dev>";
+
+    return withRetry<EmailSendResult>(async () => {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject,
+          text: message,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        const err = new ExternalServiceError("Email", `Resend failed with status ${response.status}: ${text}`);
+        MonitoringService.logExternalApiFailure("Resend", "sendEmail", err, { to, status: response.status });
+        throw err;
       }
-      return this._sendViaTwilio(to, message);
+
+      const data = (await response.json()) as { id?: string };
+      return {
+        success: true,
+        messageId: data.id ?? undefined,
+      };
     }, 3, 1000);
   }
 
-  /**
-   * Internal: Send via Twilio WhatsApp Business API.
-   */
-  private static async _sendViaTwilio(to: string, message: string): Promise<WhatsAppSendResult> {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const from = process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
-
-    if (!accountSid || !authToken) {
-      throw new ExternalServiceError(
-        "WhatsApp",
-        "Twilio credentials not configured. Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN env variables."
-      );
-    }
-
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: to.startsWith("whatsapp:") ? to : `whatsapp:${to}`,
-        From: from.startsWith("whatsapp:") ? from : `whatsapp:${from}`,
-        Body: message,
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      const err = new ExternalServiceError("WhatsApp", `Twilio failed with status ${response.status}: ${text}`);
-      MonitoringService.logExternalApiFailure("Twilio", "sendMessage", err, { to, status: response.status });
-      throw err;
-    }
-
-    const data = (await response.json()) as { sid?: string };
-    return {
-      success: true,
-      messageId: data.sid ?? undefined,
-    };
-  }
-
-  /**
-   * Internal: Send via Fonnte WhatsApp API.
-   */
-  private static async _sendViaFonnte(to: string, message: string): Promise<WhatsAppSendResult> {
-    const apiToken = process.env.FONNTE_API_TOKEN;
-
-    if (!apiToken) {
-      throw new ExternalServiceError(
-        "WhatsApp",
-        "Fonnte credentials not configured. Set FONNTE_API_TOKEN env variable."
-      );
-    }
-
-    const response = await fetch("https://api.fonnte.com/send", {
-      method: "POST",
-      headers: {
-        Authorization: apiToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        target: to,
-        message,
-        type: "text",
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      const err = new ExternalServiceError("WhatsApp", `Fonnte failed with status ${response.status}: ${text}`);
-      MonitoringService.logExternalApiFailure("Fonnte", "sendMessage", err, { to, status: response.status });
-      throw err;
-    }
-
-    const data = (await response.json()) as { id?: string; status?: boolean };
-    if (data.status === false) {
-      const err = new ExternalServiceError("WhatsApp", "Fonnte returned failure status");
-      MonitoringService.logExternalApiFailure("Fonnte", "sendMessage", err, { to, response: data });
-      throw err;
-    }
-
-    return {
-      success: true,
-      messageId: data.id ?? undefined,
-    };
-  }
 
   /**
    * Send digest via Telegram Bot API.
@@ -467,11 +409,12 @@ export class DailyDigestService {
       const message = await this.generateDigestMessage(userId, user.locale, now);
 
       // Step 3: Run delivery via configured channel (retry is inside each send method)
-      if (user.deliveryChannel === DigestChannel.WHATSAPP) {
-        if (!user.whatsappNumber) {
-          throw new ValidationError("User does not have a registered WhatsApp number");
-        }
-        await this.sendViaWhatsApp(user.whatsappNumber, message);
+      if (user.deliveryChannel === DigestChannel.EMAIL) {
+        await this.sendViaEmail(
+          user.email,
+          "📋 Daily Digest — Your Task Summary",
+          message
+        );
       } else if (user.deliveryChannel === DigestChannel.TELEGRAM) {
         if (!user.telegramChatId) {
           throw new ValidationError("User does not have a registered Telegram chat ID");

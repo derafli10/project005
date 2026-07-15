@@ -1,17 +1,18 @@
 [EXECUTE TASK - SYSTEM REINFORCEMENT DIRECTIVE]
 
 TASK TO EXECUTE:
-Task Number: [21.4]
+Task Number: [21.3]
 
 TASK CONTENT (pasted directly from tasks.md — agent should NOT re-open tasks.md, this is the full and current content for this task):
-  - 21.4 Set up monitoring and error tracking
-    - Integrate Sentry or similar error tracking service
-    - Add custom error logging for external API failures
-    - Set up performance monitoring for slow queries
-    - Add uptime monitoring for cron jobs
-    - _Requirements: Design: Error Handling_
+  - 21.3 Configure production environment variables
+    - Set up Neon PostgreSQL production connection string
+    - Configure Auth.js secret and callback URLs
+    - ConfigureTelegram API credentials
+    - Configure CDN upload credentials (Vercel Blob/Cloudinary)
+    - Set up encryption keys for AnonymousPost authorId (store private key in HSM/vault)
+    - _Requirements: 1.5, 10.6, 11.7, 13.2_
 
-Context/Notes: [design.md Error Handling]
+Context/Notes: [requirements.md 1.5, 10.6, 11.7, 13.2]
 
 CRITICAL AGENT INSTRUCTIONS (DO NOT ASSUME, DO NOT HALLUCINATE):
 

@@ -234,12 +234,11 @@ This implementation plan translates the design and requirements documents into a
     - Implement `attemptIdempotentDelivery` with database-first INSERT strategy
     - Insert DailyDigestLog with composite unique [userId, digestDate] BEFORE external API call
     - If constraint violation, fail-fast immediately (already sent today)
-    - If INSERT succeeds, proceed with WhatsApp/Telegram API call
+    - If INSERT succeeds, proceed with Telegram API call
     - Implement `shouldSendDigest` checking current time against user digestTime ± 15 min window
     - _Requirements: 13.1, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9_
   
-  - [x] 6.2 Implement WhatsApp and Telegram integration with retry
-    - Implement `sendViaWhatsApp` using Twilio/Fonnte/WhatsApp Business API
+  - [x] 6.2 Implement Telegram integration with retry
     - Implement `sendViaTelegram` using Telegram Bot API
     - Wrap both with exponential backoff retry mechanism (max 3 attempts, base delay 1000ms)
     - Log deliveryStatus (SENT, FAILED) to DailyDigestLog
@@ -645,7 +644,7 @@ This implementation plan translates the design and requirements documents into a
     - Create `src/app/settings/page.tsx`
     - Add toggle switch for digestEnabled
     - Add time picker for digestTime (HH:MM format)
-    - Add dropdown for deliveryChannel (WHATSAPP, TELEGRAM)
+    - Add dropdown for deliveryChannel (TELEGRAM)
     - Save preferences to User record via Server Action
     - _Requirements: 13.1, 13.2_
   
@@ -665,9 +664,9 @@ This implementation plan translates the design and requirements documents into a
     - Support both EN and ID locales via early shifted translation logic
     - _Requirements: 13.8, 13.9_
   
-  - [x] 18.4 Configure WhatsApp Business API integration
-    - Set up Twilio/Fonnte/WhatsApp Business API credentials in environment variables
-    - Implement DailyDigestService.sendViaWhatsApp
+  - [x] 18.4 Configure Email API integration
+    - Set up Resend API credentials in environment variables
+    - Implement DailyDigestService.sendViaEmail
     - Wrap with exponential backoff retry (max 3 attempts)
     - Return success/error status
     - _Requirements: 13.10_
@@ -679,10 +678,10 @@ This implementation plan translates the design and requirements documents into a
     - Return success/error status
     - _Requirements: 13.10_
   
-  - [x] 18.6 Add user phone/chatId linking UI
-    - Extend settings page with WhatsApp phone number input field
+  - [x] 18.6 Add user Telegram chatId linking UI
+    - Extend settings page with Email/Telegram delivery channel selector
     - Add Telegram chat linking flow (display bot username, verify connection)
-    - Save phone number and Telegram chatId to User record
+    - Save Telegram chatId to User record
     - _Requirements: 13.2_
   
   - [x]* 18.7 Write integration tests for Daily Digest
@@ -749,7 +748,7 @@ This implementation plan translates the design and requirements documents into a
   - [ ] 21.3 Configure production environment variables
     - Set up Neon PostgreSQL production connection string
     - Configure Auth.js secret and callback URLs
-    - Configure WhatsApp/Telegram API credentials
+    - Configure Telegram API credentials
     - Configure CDN upload credentials (Vercel Blob/Cloudinary)
     - Set up encryption keys for AnonymousPost authorId (store private key in HSM/vault)
     - _Requirements: 1.5, 10.6, 11.7, 13.2_

@@ -105,7 +105,7 @@ describe("Dictionary loading correctness", () => {
     /**
      * The ID dictionary must be a real translation, not a copy of English.
      * Some keys are intentionally identical across locales (brand names like
-     * "WhatsApp"/"Telegram", loanwords like "Password"/"Dashboard", meme
+     * "Telegram", loanwords like "Password"/"Dashboard", meme
      * phrases, emoji-only labels). Rather than maintain a fragile allowlist,
      * we assert that a strong majority of keys are genuinely translated.
      *

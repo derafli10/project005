@@ -9,8 +9,8 @@ import { SettingsClient } from "./SettingsClient";
  * Allows authenticated users to configure their Daily Digest preferences:
  * - Enable/disable daily digest notifications
  * - Set preferred delivery time (HH:MM format)
- * - Choose delivery channel (WhatsApp or Telegram)
- * - Provide contact information (phone number or chat ID)
+ * - Choose delivery channel (Email or Telegram)
+ * - Provide Telegram chat ID if using Telegram channel
  *
  * Requirements: 13.1, 13.2
  */
@@ -26,10 +26,10 @@ export default async function SettingsPage() {
   const user = await baseDb.user.findUnique({
     where: { id: userId },
     select: {
+      email: true,
       digestEnabled: true,
       digestTime: true,
       deliveryChannel: true,
-      whatsappNumber: true,
       telegramChatId: true,
     },
   });
@@ -49,10 +49,10 @@ export default async function SettingsPage() {
             digestEnabled: user.digestEnabled,
             digestTime: user.digestTime,
             deliveryChannel: user.deliveryChannel,
-            whatsappNumber: user.whatsappNumber,
             telegramChatId: user.telegramChatId,
           }}
           botUsername={process.env.TELEGRAM_BOT_USERNAME || "Project005DigestBot"}
+          userEmail={user.email}
         />
       </div>
     </main>

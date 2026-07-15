@@ -255,7 +255,7 @@ export const AnonymousPostSchema = anonymousPostSchema;
 // ─── DIGEST PREFERENCE SCHEMA ──────────────────────────────────────────────
 
 export const DigestPreferenceSchema = z.object({
-  channel: z.enum(["WHATSAPP", "TELEGRAM"] satisfies DigestChannel[]),
+  channel: z.enum(["EMAIL", "TELEGRAM"] satisfies DigestChannel[]),
   contactId: z
     .string()
     .min(5, { message: "Contact ID must be at least 5 characters." })

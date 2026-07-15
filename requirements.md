@@ -30,7 +30,7 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 - **Task_Edit_Log**: Audit trail untuk setiap perubahan data Task
 - **Feed**: Timeline anonim dalam ClassRoom untuk interaksi mahasiswa
 - **Post_Tag**: Kategori wajib untuk setiap Post di Feed (#CurhatTugas, #ButuhTemanTim, #TanyaJawaban, #DiskusiUmum)
-- **Daily_Digest**: Ringkasan tugas kritis harian yang dikirim via WhatsApp/Telegram
+- **Daily_Digest**: Ringkasan tugas kritis harian yang dikirim via Telegram
 - **Academic_Wrapped**: Kartu vertikal 9:16 end-of-week yang merangkum pencapaian User
 - **Academic_Comeback**: Animasi fullscreen celebration saat User menyelesaikan Task di zona Overcooked
 - **Locale**: Preferensi bahasa UI (Bahasa Indonesia atau English)
@@ -263,15 +263,15 @@ Platform ini dibangun dengan Next.js (App Router), PostgreSQL (Neon Serverless),
 
 ### Requirement 13: Automated Daily Digest dengan Idempotent Delivery Pipeline
 
-**User Story:** Sebagai mahasiswa dengan pola tidur fleksibel, saya ingin menerima ringkasan tugas kritis harian via WhatsApp/Telegram di waktu yang saya tentukan sendiri (bukan fixed 7:00 AM), sehingga saya bisa plan hari tanpa melewatkan deadline atau perubahan penting, dengan jaminan exactly-once delivery.
+**User Story:** Sebagai mahasiswa dengan pola tidur fleksibel, saya ingin menerima ringkasan tugas kritis harian via Telegram di waktu yang saya tentukan sendiri (bukan fixed 7:00 AM), sehingga saya bisa plan hari tanpa melewatkan deadline atau perubahan penting, dengan jaminan exactly-once delivery.
 
 #### Acceptance Criteria
 
 1. THE System SHALL menyediakan settings UI di mana User dapat mengaktifkan/menonaktifkan Daily_Digest dan memilih delivery time (format HH:MM, contoh: 21:00 atau 06:30)
-2. THE System SHALL menyimpan preferensi Daily_Digest di User record dengan fields: digestEnabled (boolean), digestTime (time), dan digestChannel (WHATSAPP atau TELEGRAM)
+2. THE System SHALL menyimpan preferensi Daily_Digest di User record dengan fields: digestEnabled (boolean), digestTime (time), dan digestChannel (TELEGRAM)
 3. THE System SHALL menjalankan scheduled cron job setiap 30 menit untuk check User records dengan digestEnabled=true dan digestTime matching current time ± 15 menit
 4. THE System SHALL implement Idempotency Key mechanism using composite unique index [userId, digestDate] on DailyDigestLog table where digestDate format is strictly YYYY-MM-DD
-5. BEFORE calling external WhatsApp/Telegram APIs, THE System SHALL attempt to INSERT execution token into DailyDigestLog with (userId, CURRENT_DATE) composite key
+5. BEFORE calling external Telegram APIs, THE System SHALL attempt to INSERT execution token into DailyDigestLog with (userId, CURRENT_DATE) composite key
 6. IF INSERT operation triggers database constraint violation due to existing [userId, digestDate] record, THEN THE System SHALL immediately fail-fast and exit without sending duplicate message, guaranteeing exactly-once delivery semantics
 7. IF INSERT operation succeeds, THEN THE System SHALL proceed with digest generation and external API call
 8. THE Daily_Digest message SHALL berisi: jumlah Parent Task (excluding SubTask) pending, top 3 Task berdasarkan JIT-computed Priority_Score, dan "What changed since yesterday?" module

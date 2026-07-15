@@ -133,15 +133,13 @@ beforeEach(() => {
 
   // Provide API credentials so the service doesn't throw ExternalServiceError
   process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
-  process.env.TWILIO_ACCOUNT_SID = "test-account-sid";
-  process.env.TWILIO_AUTH_TOKEN = "test-auth-token";
+  process.env.RESEND_API_KEY = "test-resend-key";
 });
 
 afterEach(() => {
   vi.useRealTimers();
   delete process.env.TELEGRAM_BOT_TOKEN;
-  delete process.env.TWILIO_ACCOUNT_SID;
-  delete process.env.TWILIO_AUTH_TOKEN;
+  delete process.env.RESEND_API_KEY;
 });
 
 // ─── Test Helpers ───────────────────────────────────────────────────────────
@@ -150,7 +148,7 @@ function seedUser(
   email: string,
   digestEnabled: boolean,
   digestTime: string | null,
-  whatsappNumber: string | null = null,
+  useEmail: boolean = false,
   telegramChatId: string | null = null
 ): string {
   const store = getInMemoryStore();
@@ -165,8 +163,7 @@ function seedUser(
     locale: "EN" as const,
     digestEnabled,
     digestTime,
-    deliveryChannel: whatsappNumber ? "WHATSAPP" as const : "TELEGRAM" as const,
-    whatsappNumber,
+    deliveryChannel: useEmail ? "EMAIL" as const : "TELEGRAM" as const,
     telegramChatId,
     createdAt: now,
     updatedAt: now,
@@ -183,15 +180,15 @@ describe("Task 18.2.1 — Cron job routing and ±15m matching filter", () => {
   it("matches and dispatches users scheduled inside the ±15m window", async () => {
     // Current time: 12:00 PM (12:00 UTC)
     // 1. User scheduled at 12:00 PM (Matches exactly)
-    const u1 = seedUser("u1@test.com", true, "12:00", "62812345");
+    const u1 = seedUser("u1@test.com", true, "12:00", true);
     // 2. User scheduled at 12:15 PM (Matches: +15m)
-    const u2 = seedUser("u2@test.com", true, "12:15", "62812346");
+    const u2 = seedUser("u2@test.com", true, "12:15", true);
     // 3. User scheduled at 11:45 AM (Matches: -15m)
-    const u3 = seedUser("u3@test.com", true, "11:45", "62812347");
+    const u3 = seedUser("u3@test.com", true, "11:45", true);
     // 4. User scheduled at 12:16 PM (No match: +16m)
-    seedUser("u4@test.com", true, "12:16", "62812348");
+    seedUser("u4@test.com", true, "12:16", true);
     // 5. User scheduled at 12:00 PM but disabled (No match)
-    seedUser("u5@test.com", false, "12:00", "62812349");
+    seedUser("u5@test.com", false, "12:00", true);
 
     const response = await cronHandler(new Request("http://localhost/api/webhooks/cron?type=digest"));
     expect(response.status).toBe(200);
@@ -227,7 +224,7 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
     // Inngest testing helpers/directly invoking standard service logic:
     await DailyDigestService.attemptIdempotentDelivery(userId, NOW);
 
-    // Verify WhatsApp/Telegram API endpoint was hit
+    // Verify Email/Telegram API endpoint was hit
     expect(mockFetch).toHaveBeenCalled();
     expect(mockFetch.mock.calls[0]![0]).toContain("telegram");
 
@@ -259,10 +256,62 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("delivers via Email channel when deliveryChannel is EMAIL", async () => {
+    const userId = seedUser("email@test.com", true, "12:00", true); // useEmail = true
+
+    // Mock Resend API response
+    mockFetch.mockResolvedValue(
+      new Response(JSON.stringify({ id: "msg_12345" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    await DailyDigestService.attemptIdempotentDelivery(userId, NOW);
+
+    // Verify Resend API endpoint was hit
+    expect(mockFetch).toHaveBeenCalled();
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall![0]).toContain("api.resend.com/emails");
+
+    // Verify DailyDigestLog shows SENT
+    const store = getInMemoryStore();
+    const todayStr = new Date(Date.UTC(2026, 5, 30)).toISOString();
+    const log = store.dailyDigestLogs.get(`${userId}/${todayStr}`);
+    expect(log).toBeDefined();
+    expect(log?.deliveryStatus).toBe("SENT");
+  });
+
+  it("delivers via Telegram channel when deliveryChannel is TELEGRAM", async () => {
+    const userId = seedUser("telegram@test.com", true, "12:00", false, "123456"); // useEmail = false, has chatId
+
+    // Mock Telegram API response
+    mockFetch.mockResolvedValue(
+      new Response(JSON.stringify({ result: { message_id: 789 } }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    await DailyDigestService.attemptIdempotentDelivery(userId, NOW);
+
+    // Verify Telegram API endpoint was hit
+    expect(mockFetch).toHaveBeenCalled();
+    const fetchCall = mockFetch.mock.calls[0];
+    expect(fetchCall![0]).toContain("api.telegram.org");
+
+    // Verify DailyDigestLog shows SENT
+    const store = getInMemoryStore();
+    const todayStr = new Date(Date.UTC(2026, 5, 30)).toISOString();
+    const log = store.dailyDigestLogs.get(`${userId}/${todayStr}`);
+    expect(log).toBeDefined();
+    expect(log?.deliveryStatus).toBe("SENT");
+  });
+
   it("updates log status to FAILED and stores error message on external API failures", async () => {
     const userId = seedUser("fail@test.com", true, "12:00", null, "123456");
 
-    // Stub external API to return internal server error (fails WhatsApp/Telegram bot)
+    // Stub external API to return internal server error (fails Email/Telegram delivery)
     mockFetch.mockResolvedValue(new Response("API Failure Details", { status: 500 }));
 
     // Use real timers for this test
@@ -281,14 +330,14 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
   });
 
   it("implements exponential backoff retry mechanism with max 3 attempts on API failures (Requirement 13.10)", async () => {
-    const userId = seedUser("retry@test.com", true, "12:00", "62812345");
+    const userId = seedUser("retry@test.com", true, "12:00", true);
 
     // Mock fetch to fail first 2 times, succeed on 3rd
     mockFetch
       .mockRejectedValueOnce(new Error("Network timeout"))
       .mockRejectedValueOnce(new Error("Connection refused"))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ sid: "SM_SUCCESS" }), {
+        new Response(JSON.stringify({ id: "SM_SUCCESS" }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         })
@@ -312,7 +361,7 @@ describe("Task 18.2.2 — Background worker execution and idempotency logging", 
   });
 
   it("logs permanent failure after maximum 3 retry attempts exhausted (Requirement 13.10)", async () => {
-    const userId = seedUser("permanent-fail@test.com", true, "12:00", "62812345");
+    const userId = seedUser("permanent-fail@test.com", true, "12:00", true);
 
     // Mock fetch to fail all 3 attempts
     mockFetch

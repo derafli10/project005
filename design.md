@@ -77,8 +77,8 @@ graph TB
     end
     
     subgraph "External Services"
-        WhatsAppAPI[WhatsApp Business API]
         TelegramAPI[Telegram Bot API]
+        Resend[Email]
         CDN[CDN/Cloud Storage]
     end
     
@@ -121,7 +121,6 @@ graph TB
     
     PriorityRecalc --> TaskService
     DigestJob --> DigestService
-    DigestJob --> WhatsAppAPI
     DigestJob --> TelegramAPI
     WrappedJob --> WrappedService
     WrappedService --> CDN
@@ -730,7 +729,7 @@ interface AcademicWrappedService {
 
 #### 8. Daily Digest Service (`src/lib/services/daily-digest.service.ts`)
 
-Sends automated task summaries via WhatsApp/Telegram with idempotent delivery guarantees.
+Sends automated task summaries via Email or Telegram with idempotent delivery guarantees.
 
 ```typescript
 interface DailyDigestService {
@@ -748,7 +747,7 @@ interface DailyDigestService {
    */
   attemptIdempotentDelivery(
     userId: string,
-    channel: 'WHATSAPP' | 'TELEGRAM',
+    channel: 'EMAIL' | 'TELEGRAM',
     message: string
   ): Promise<{
     success: boolean
@@ -757,11 +756,10 @@ interface DailyDigestService {
   }>
   
   /**
-   * Send digest via WhatsApp Business API
-   * Uses Twilio, Fonnte, or direct WhatsApp Business API
+   * Send digest via Email using Resend API
    * Wrapped with exponential backoff retry (max 3 attempts)
    */
-  sendViaWhatsApp(phoneNumber: string, message: string): Promise<{
+  sendViaEmail(to: string, subject: string, message: string): Promise<{
     success: boolean
     messageId?: string
     error?: string
@@ -1052,7 +1050,7 @@ model DailyDigestLog {
   sentAt          DateTime        @default(now())
   taskCount       Int
   deliveryStatus  DeliveryStatus  @default(SENT) // SENT, FAILED, SKIPPED
-  deliveryChannel String          @db.VarChar(20) // WHATSAPP, TELEGRAM
+  deliveryChannel String          @db.VarChar(20) // TELEGRAM
   errorMessage    String?         @db.Text
   
   user            User            @relation(fields: [userId], references: [id])
@@ -1077,7 +1075,7 @@ enum DeliveryStatus {
 **Idempotency Flow**:
 1. Before external API call, attempt INSERT with `(userId, CURRENT_DATE)`
 2. If constraint violation occurs, fail-fast immediately (digest already sent today)
-3. If INSERT succeeds, proceed with WhatsApp/Telegram API call
+3. If INSERT succeeds, proceed with Telegram API call
 4. Update `deliveryStatus` based on API response
 
 
@@ -1519,7 +1517,7 @@ async function createClassroomTask(data: CreateTaskInput, creatorId: string) {
 
 #### 4. External Service Retry Logic
 
-WhatsApp/Telegram API calls wrapped with exponential backoff retry:
+Telegram API calls wrapped with exponential backoff retry:
 
 ```typescript
 async function sendWithRetry<T>(
@@ -1654,7 +1652,7 @@ The system employs both **property-based testing** and **unit testing** for comp
 
 3. **Integration Points**
    - Database connection failures
-   - External API failures (WhatsApp, Telegram)
+   - External API failures (Telegram)
    - CDN upload failures
 
 4. **UI Component Behavior**
@@ -2726,7 +2724,8 @@ NEXTAUTH_SECRET="..."
 NEXTAUTH_URL="https://yourdomain.com"
 
 # External Services
-WHATSAPP_API_KEY="..."
+RESEND_API_KEY="..."
+RESEND_FROM_EMAIL="Project005 <digest@project005.app>"
 TELEGRAM_BOT_TOKEN="..."
 
 # CDN/Storage
@@ -2756,7 +2755,7 @@ ENABLE_ACADEMIC_WRAPPED="true"
    - API routes: No cache (dynamic data)
 
 4. **Rate Limiting**
-   - WhatsApp/Telegram API: Max 1000 messages/hour
+   - Telegram API: Max 1000 messages/hour
    - Task creation: Max 100 tasks/user/day (abuse prevention)
    - Feed posts: Max 50 posts/user/day
 
@@ -2992,7 +2991,13 @@ async function sendDailyDigest(userId: string, channel: string): Promise<void> {
   // 2. Proceed with external API call (first attempt guaranteed)
   try {
     const message = await generateDigestMessage(userId)
-    await sendViaWhatsApp(message)
+    
+    // Send via configured channel (EMAIL or TELEGRAM)
+    if (user.deliveryChannel === 'EMAIL') {
+      await sendViaEmail(user.email, 'Daily Digest', message)
+    } else if (user.deliveryChannel === 'TELEGRAM') {
+      await sendViaTelegram(user.telegramChatId, message)
+    }
     
     // 3. Mark as sent
     await prisma.dailyDigestLog.update({
@@ -3182,7 +3187,7 @@ export default {
               "style-src 'self' 'unsafe-inline'", // Required for Tailwind
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.whatsapp.com https://api.telegram.org",
+              "connect-src 'self' https://api.telegram.org",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'"
@@ -3219,7 +3224,7 @@ export default {
 
 ### 8. Secure External API Communication
 
-All external API calls (WhatsApp, Telegram, CDN) wrapped with:
+All external API calls (Telegram, CDN) wrapped with:
 - TLS 1.3 minimum
 - Certificate pinning for critical endpoints
 - Exponential backoff retry (max 3 attempts)

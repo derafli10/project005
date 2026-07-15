@@ -77,16 +77,12 @@ beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
   process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
-  process.env.TWILIO_ACCOUNT_SID = "test-account-sid";
-  process.env.TWILIO_AUTH_TOKEN = "test-auth-token";
-  process.env.TWILIO_WHATSAPP_FROM = "whatsapp:+14155238886";
+  process.env.RESEND_API_KEY = "test-resend-key";
 });
 
 afterEach(() => {
   delete process.env.TELEGRAM_BOT_TOKEN;
-  delete process.env.TWILIO_ACCOUNT_SID;
-  delete process.env.TWILIO_AUTH_TOKEN;
-  delete process.env.TWILIO_WHATSAPP_FROM;
+  delete process.env.RESEND_API_KEY;
 });
 
 const NOW = new Date("2026-06-25T11:10:00Z");
@@ -168,8 +164,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
                 email: "user@test.com",
                 digestEnabled: true,
                 digestTime: "11:10",
-                whatsappNumber: "+628123456789",
-                deliveryChannel: "WHATSAPP",
+                deliveryChannel: "EMAIL",
               },
             });
 
@@ -245,8 +240,7 @@ describe.sequential("Feature: project005-task-management-dss - Daily Digest Serv
           email: "idempotent@test.com",
           digestEnabled: true,
           digestTime: "11:10",
-          whatsappNumber: "+628123456789",
-          deliveryChannel: "WHATSAPP",
+          deliveryChannel: "EMAIL",
         },
       });
 

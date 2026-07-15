@@ -42,7 +42,7 @@ enum DeliveryStatus {
 }
 
 enum DigestChannel {
-  WHATSAPP
+  EMAIL
   TELEGRAM
 }
 
@@ -63,8 +63,7 @@ model User {
 
   digestEnabled   Boolean  @default(false)
   digestTime      String?  // HH:MM format
-  deliveryChannel DigestChannel @default(WHATSAPP)
-  whatsappNumber  String?
+  deliveryChannel DigestChannel @default(EMAIL)
   telegramChatId  String?
 
   createdAt       DateTime @default(now())

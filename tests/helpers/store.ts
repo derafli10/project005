@@ -13,8 +13,7 @@ export interface InMemoryUser {
   locale: "EN" | "ID";
   digestEnabled: boolean;
   digestTime: string | null;
-  deliveryChannel: "WHATSAPP" | "TELEGRAM";
-  whatsappNumber: string | null;
+  deliveryChannel: "EMAIL" | "TELEGRAM";
   telegramChatId: string | null;
   createdAt: Date;
   updatedAt: Date;

@@ -7,6 +7,7 @@ import { DigestChannel } from "@/generated/prisma";
 interface SettingsClientProps {
   initialSettings: DigestSettings;
   botUsername: string;
+  userEmail: string;
 }
 
 /**
@@ -15,13 +16,13 @@ interface SettingsClientProps {
  * Provides a form for users to configure their Daily Digest preferences with:
  * - Toggle switch for enabling/disabling digest
  * - Time picker for digest delivery time (HH:MM format)
- * - Dropdown for delivery channel selection (WhatsApp/Telegram)
+ * - Dropdown for delivery channel selection (Email/Telegram)
  * - Conditional contact info inputs based on selected channel
  * - Premium Telegram connection linking and status verification flow
  *
  * Requirements: 13.1, 13.2
  */
-export function SettingsClient({ initialSettings, botUsername }: SettingsClientProps) {
+export function SettingsClient({ initialSettings, botUsername, userEmail }: SettingsClientProps) {
   const [isPending, startTransition] = useTransition();
   const [settings, setSettings] = useState<DigestSettings>(initialSettings);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -147,30 +148,23 @@ export function SettingsClient({ initialSettings, botUsername }: SettingsClientP
                 }
                 className="block w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-800 bg-white cursor-pointer transition"
               >
-                <option value={DigestChannel.WHATSAPP}>WhatsApp</option>
-                <option value={DigestChannel.TELEGRAM}>Telegram</option>
+                <option value={DigestChannel.EMAIL}>📧 Email</option>
+                <option value={DigestChannel.TELEGRAM}>✈️ Telegram</option>
               </select>
             </div>
 
-            {/* WhatsApp Number Input */}
-            {settings.deliveryChannel === DigestChannel.WHATSAPP && (
-              <div className="space-y-2 animate-slide-down">
-                <label htmlFor="whatsappNumber" className="text-sm font-semibold text-gray-700">
-                  WhatsApp Number
-                </label>
-                <input
-                  id="whatsappNumber"
-                  type="tel"
-                  value={settings.whatsappNumber || ""}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, whatsappNumber: e.target.value }))
-                  }
-                  placeholder="+62812345678"
-                  required={settings.digestEnabled && settings.deliveryChannel === DigestChannel.WHATSAPP}
-                  className="block w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-800 transition"
-                />
+            {/* Email Channel Info */}
+            {settings.deliveryChannel === DigestChannel.EMAIL && (
+              <div className="space-y-2 p-4 bg-emerald-50/30 rounded-xl border border-emerald-100/50 animate-slide-down">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 block">Email Delivery</span>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Your daily digest will be sent to your registered email address:
+                </p>
+                <p className="text-sm font-semibold text-gray-800 bg-white px-3 py-2 rounded-lg border border-gray-200 inline-block">
+                  {userEmail}
+                </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Use international format with your country code (e.g. +62 for Indonesia).
+                  To change your email address, update it from your account settings.
                 </p>
               </div>
             )}
