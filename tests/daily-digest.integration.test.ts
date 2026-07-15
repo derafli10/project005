@@ -148,7 +148,7 @@ function seedUser(
   email: string,
   digestEnabled: boolean,
   digestTime: string | null,
-  useEmail: boolean = false,
+  useEmail: boolean | null = false,
   telegramChatId: string | null = null
 ): string {
   const store = getInMemoryStore();
@@ -563,7 +563,7 @@ describe("Task 18.2.4 — 'What changed since yesterday?' recent changes detecti
     expect(message).toContain("Perubahan sejak kemarin:");
     expect(message).toContain("Baru ditambahkan:");
     expect(message).toContain("Recent New Task");
-    
+
     // Note: In-memory DB doesn't fully support createdAt gte filters in complex where clauses,
     // so this test validates the message structure rather than strict filtering.
     // The actual Prisma DB will correctly filter by createdAt >= dayAgo.
@@ -634,7 +634,7 @@ describe("Task 18.2.4 — 'What changed since yesterday?' recent changes detecti
     expect(message).toContain("- Baru ditambahkan:");
     expect(message).toContain("- Perubahan deadline: -");
     expect(message).toContain("- Eskalasi prioritas: -");
-    
+
     // Note: The createdAt filter limitation in in-memory DB means the old task might appear  
     // in "newly added". The actual Prisma DB will correctly show empty state for tasks
     // created > 24h ago. This test validates the message structure is present.
