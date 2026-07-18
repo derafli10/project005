@@ -125,7 +125,7 @@ vi.mock("@/i18n/server", () => ({
 // Service / action imports MUST come after every vi.mock declaration.
 import { completeTaskAction } from "@/app/actions/task";
 import { TaskService } from "@/lib/services/task.service";
-import { CookedMeterService } from "@/lib/services/cooked-meter.service";
+import { CookedMeterService, clearCookedScoreCache } from "@/lib/services/cooked-meter.service";
 import type { QueueTask } from "@/lib/services/task.service";
 
 const NOW = new Date("2026-06-30T12:00:00Z");
@@ -134,6 +134,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
+  clearCookedScoreCache();
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });

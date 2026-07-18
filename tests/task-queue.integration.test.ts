@@ -144,7 +144,7 @@ import {
   completeTaskAction,
 } from "@/app/actions/task";
 import { TaskService } from "@/lib/services/task.service";
-import { CookedMeterService } from "@/lib/services/cooked-meter.service";
+import { CookedMeterService, clearCookedScoreCache } from "@/lib/services/cooked-meter.service";
 import {
   NotFoundError,
   ValidationError,
@@ -154,6 +154,7 @@ import type { QueueTask } from "@/lib/services/task.service";
 beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
+  clearCookedScoreCache();
 });
 
 // ─── Test helpers ───────────────────────────────────────────────────────────

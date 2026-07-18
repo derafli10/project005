@@ -208,6 +208,8 @@ export class RecoveryModeService {
           completedAt: new Date(),
         },
       });
+      const { invalidateCookedScoreCache } = await import("./cooked-meter.service");
+      invalidateCookedScoreCache(userId);
       return true;
     }
 

@@ -329,3 +329,9 @@ export const cookedMeterService = CookedMeterService;
 export function invalidateCookedScoreCache(userId: string): void {
   cumulativeScoreCache.invalidate(`cooked:${userId}`);
 }
+
+/** Clear all entries in the cumulative score cache. Useful for test isolation. */
+export function clearCookedScoreCache(): void {
+  cumulativeScoreCache.clear();
+}
+

@@ -144,11 +144,12 @@ import {
   activateRecoveryModeAction,
 } from "@/app/actions/recovery";
 import { RecoveryModeService } from "@/lib/services/recovery-mode.service";
-import { CookedMeterService } from "@/lib/services/cooked-meter.service";
+import { CookedMeterService, clearCookedScoreCache } from "@/lib/services/cooked-meter.service";
 
 beforeEach(() => {
   resetInMemoryDb();
   hydrateMock();
+  clearCookedScoreCache();
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
 });
